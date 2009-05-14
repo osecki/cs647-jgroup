@@ -10,11 +10,15 @@ public class VoteClient
 		String userInput;
 		String stateInput;
 		String candidateInput;
+		ArrayList<VoteServer> serverList;
 		ArrayList<String> stateList = new ArrayList<String>();
 		VoteServer clientServer = null;
 		
 		try 
 		{
+			//Create new server list
+			serverList = new ArrayList<VoteServer>();
+			
 			//Get a reader to get client input from console
     		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 						
@@ -27,6 +31,10 @@ public class VoteClient
 			server2.start();
 			server3.start();
 			
+			serverList.add(server1);
+			serverList.add(server2);
+			serverList.add(server3);
+			
     		do
     		{
 				System.out.println("\n\n----------- Menu ------------");
@@ -34,7 +42,8 @@ public class VoteClient
 				System.out.println("(2)  Results By Candidate");
 				System.out.println("(3)  All Candidate Results By State");
 				System.out.println("(4)  National Tally For All Candidates");
-				System.out.println("(5)  Results");
+				System.out.println("(5)  Kill Random Server");
+				System.out.println("(6)  Quit");
 		
 				System.out.println();
 				System.out.print("Select An Option: ");
@@ -85,7 +94,11 @@ public class VoteClient
 					//should I iterate a list of all states and open channels and 
 					//aggregate here?
 				}			
-    		} while(!userInput.equals("5"));
+				else if (userInput.equals("5"))
+				{
+					//implement
+				}
+    		} while(!userInput.equals("6"));
 		
     		//stop
     		clientServer.stop();
