@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
 public class VoteClient 
@@ -9,6 +10,7 @@ public class VoteClient
 		String userInput;
 		String stateInput;
 		String candidateInput;
+		ArrayList<String> stateList = new ArrayList<String>();
 		
 		try 
 		{
@@ -40,12 +42,14 @@ public class VoteClient
 				//Process based on user selection
 				if (userInput.equals("1"))
 				{
-					System.out.println();
-					System.out.print("Select A State:");
+					System.out.print("Select A State: ");
 					stateInput = br.readLine();
+		
+					//add state to global state list
+					if (!stateList.contains(stateInput))
+						stateList.add(stateInput);
 					
-					System.out.println();
-					System.out.print("Select A Candidate:");
+					System.out.print("Select A Candidate: ");
 					candidateInput = br.readLine();					
 					
 					//Vote
@@ -62,15 +66,17 @@ public class VoteClient
 				}
 				else if (userInput.equals("3"))
 				{
-					System.out.println();
-					System.out.print("Select A State:");
+					System.out.print("Select A State: ");
 					stateInput = br.readLine();				
 					
 					//Get candidates for state
 					String tally = new VoteServer(stateInput).getCandidatesByState();					
-					System.out.println("State Results: " + tally);
+					System.out.println("All Candidate Results In " + stateInput + " : " + tally);
 				}
-				
+				else if (userInput.equals("4"))
+				{
+					
+				}
     		} while(!userInput.equals("5"));
 		} 
 		catch (Exception e) 
