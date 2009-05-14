@@ -37,7 +37,15 @@ public class VoteServer extends ReceiverAdapter
 		channel.setReceiver(this);
 		channel.connect(state);							//join the channel for the state we want
 		channel.getState(null, 10000);
+		
+		//maybe spawn a thread here to signify a heartbeat?
+		
 	}	
+	
+	public void stop()
+	{
+		channel.disconnect();
+	}
 	
 	public void vote(String cand) throws Exception
 	{
@@ -80,13 +88,21 @@ public class VoteServer extends ReceiverAdapter
 	
     public void receive(Message msg) 
     {
-    	Hashtable rcvdVoteTally = (Hashtable)msg.getObject();
-        
-        synchronized(voteTally)
-        {
-        	voteTally = rcvdVoteTally;
-        }
-        
+    	
+    	if (msg.getObject() instanceof Hashtable)
+    	{
+        	Hashtable rcvdVoteTally = (Hashtable)msg.getObject();
+            
+            synchronized(voteTally)
+            {
+            	voteTally = rcvdVoteTally;
+            }
+    	}
+    	else
+    	{
+    		//maybe process a string message for a heartbeat
+    	}
+    	        
         //debug
         //this.dumpVotes();
     }	

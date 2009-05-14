@@ -11,6 +11,7 @@ public class VoteClient
 		String stateInput;
 		String candidateInput;
 		ArrayList<String> stateList = new ArrayList<String>();
+		VoteServer clientServer = null;
 		
 		try 
 		{
@@ -19,8 +20,8 @@ public class VoteClient
 						
 			//Start up 3 initial servers
 			VoteServer server1 = new VoteServer("NJ");
-			VoteServer server2= new VoteServer("NJ");
-			VoteServer server3= new VoteServer("NJ");
+			VoteServer server2 = new VoteServer("NJ");
+			VoteServer server3 = new VoteServer("NJ");
 			
 			server1.start();
 			server2.start();
@@ -32,7 +33,7 @@ public class VoteClient
 				System.out.println("(1)  Vote For Candidate");
 				System.out.println("(2)  Results By Candidate");
 				System.out.println("(3)  All Candidate Results By State");
-				System.out.println("(4)  Results By State");
+				System.out.println("(4)  National Tally For All Candidates");
 				System.out.println("(5)  Results");
 		
 				System.out.println();
@@ -53,10 +54,14 @@ public class VoteClient
 					candidateInput = br.readLine();					
 					
 					//Vote
-					new VoteServer(stateInput).vote(candidateInput);
+					clientServer = new VoteServer(stateInput);
+					clientServer.vote(candidateInput);
 				}
 				else if (userInput.equals("2"))
 				{
+					//implement
+					//is this a national tally for a particular candidate?
+					
 /*
 					System.out.println();
 					System.out.print("Select A Candidate:");
@@ -70,14 +75,20 @@ public class VoteClient
 					stateInput = br.readLine();				
 					
 					//Get candidates for state
-					String tally = new VoteServer(stateInput).getCandidatesByState();					
+					clientServer = new VoteServer(stateInput);
+					String tally = clientServer.getCandidatesByState();					
 					System.out.println("All Candidate Results In " + stateInput + " : " + tally);
 				}
 				else if (userInput.equals("4"))
 				{
-					
-				}
+					//implement
+					//should I iterate a list of all states and open channels and 
+					//aggregate here?
+				}			
     		} while(!userInput.equals("5"));
+		
+    		//stop
+    		clientServer.stop();
 		} 
 		catch (Exception e) 
 		{
