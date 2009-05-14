@@ -57,7 +57,6 @@ public class VoteServer extends ReceiverAdapter
 			voteTally.put(cand, 1);
 		}
 		
-
 		Message msg = new Message(null, null, voteTally);
         channel.send(msg);			
 	}
@@ -83,13 +82,13 @@ public class VoteServer extends ReceiverAdapter
     {
     	Hashtable rcvdVoteTally = (Hashtable)msg.getObject();
         
-    	
         synchronized(voteTally)
         {
         	voteTally = rcvdVoteTally;
         }
         
-        this.dumpVotes();
+        //debug
+        //this.dumpVotes();
     }	
 	
 	public void viewAccepted(View new_view)
@@ -117,7 +116,7 @@ public class VoteServer extends ReceiverAdapter
     public void setState(byte[] new_state) 
     {
         try 
-        {
+        {        	
             Hashtable tempVoteTally = (Hashtable)(Util.objectFromByteBuffer(new_state));
             
             synchronized(this.voteTally) 
