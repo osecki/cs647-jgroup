@@ -2,8 +2,8 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="C:/Users/Bill/Documents/Drexel/CS647/VoteProject/lib/commons-logging.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Bill/Documents/Drexel/CS647/VoteProject/lib/jgroups-all.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Bill/Documents/Drexel/CS647/VoteProject/lib/log4j.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Bill/Documents/Drexel/CS647/Vote/lib/commons-logging.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Bill/Documents/Drexel/CS647/Vote/lib/jgroups-all.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Bill/Documents/Drexel/CS647/Vote/lib/log4j.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
