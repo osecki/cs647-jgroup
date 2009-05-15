@@ -33,6 +33,8 @@ public class VoteServer extends ReceiverAdapter
 	
 	public void start() throws Exception
 	{
+		System.out.println("\nStarting New Channel - Joining Cluster");
+		
 		channel = new JChannel();
 		channel.setReceiver(this);
 		channel.connect(state);							//join the channel for the state we want
@@ -116,11 +118,12 @@ public class VoteServer extends ReceiverAdapter
 	{
 		//This is called whenever someone joins or leaves the group
 		
-		//debug
-		System.out.println("viewAccepted - " + new_view);
+		System.out.println("View Changed : " + channel.getLocalAddress().toString());
+		
+		System.out.println("Servers In Cluster " + this.state + " : " + new_view.printDetails());
 	}
 	
-    public byte[] getState() 
+    public byte[] getState()				
     {
         synchronized(this.voteTally) 
         {
