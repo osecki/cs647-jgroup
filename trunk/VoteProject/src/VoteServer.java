@@ -108,8 +108,8 @@ public class VoteServer extends ReceiverAdapter
 	public void viewAccepted(View new_view)
 	{
 		// This is called whenever someone joins or leaves the group
-		System.out.println("View Changed:  " + channel.getLocalAddress().toString());
-		System.out.println("Servers In Cluster " + this.state + ":   " + new_view.printDetails());
+		//System.out.println("View Changed:  " + channel.getLocalAddress().toString());
+		//System.out.println("Servers In Cluster " + this.state + ":   " + new_view.printDetails());
 	}
 
 	public byte[] getState()				
