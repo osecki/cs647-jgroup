@@ -12,14 +12,14 @@ public class VoteClient
 		String userInput;
 		String stateInput;
 		String candidateInput;
-		ArrayList<VoteServer> serverList;
+		Hashtable<String, VoteServer> serverList;
 		ArrayList<String> stateList = new ArrayList<String>();
 		VoteServer clientServer = null;
 
 		try 
 		{
 			// Create new server list
-			serverList = new ArrayList<VoteServer>();
+			serverList = new Hashtable<String, VoteServer>();
 
 			// Get a reader to get client input from console
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -33,9 +33,9 @@ public class VoteClient
 			server2.start();
 			server3.start();
 
-			serverList.add(server1);
-			serverList.add(server2);
-			serverList.add(server3);
+			serverList.put("NJ", server1);
+			serverList.put("PA", server2);
+			serverList.put("NY", server3);
 
 			// Loop which runs the menu for the client until quit is chosen
 			do
@@ -66,13 +66,22 @@ public class VoteClient
 					System.out.print("Select A Candidate:  ");
 					candidateInput = br.readLine();					
 
-					// Vote
-					clientServer = new VoteServer(stateInput);
-					clientServer.vote(candidateInput);
-					serverList.add(clientServer);
+					//if the server group exists, use that group and vote
+					if (serverList.containsKey(stateInput))
+					{
+						clientServer = serverList.get(stateInput);
+						clientServer.vote(candidateInput);
+					}
+					else		//create the server and vote
+					{
+						clientServer = new VoteServer(stateInput);
+						clientServer.vote(candidateInput);
+						serverList.put(stateInput, clientServer);						
+					}
 				}
 				else if (userInput.equals("2"))
 				{
+
 					System.out.print("Select A Candidate:  ");
 					candidateInput = br.readLine();	
 
@@ -83,26 +92,38 @@ public class VoteClient
 					{
 						clientServer = new VoteServer(stateList.get(i));
 						total = total + clientServer.getResultsByCandidate(candidateInput);
-						serverList.add(clientServer);
+						//serverList.add(clientServer);
 					}
 
 					System.out.println("National Results For Candidate " + candidateInput + ":  " + total + ".");
+
 				}
 				else if (userInput.equals("3"))
 				{
+					String tally = "";
+					
 					System.out.print("Select A State:  ");
 					stateInput = br.readLine();				
 
 					// Get candidates for state
-					clientServer = new VoteServer(stateInput);
-					String tally = clientServer.getCandidatesByState();					
-					serverList.add(clientServer);
+					//clientServer = new VoteServer(stateInput);
+					
+					if (serverList.containsKey(stateInput))
+					{
+						clientServer = serverList.get(stateInput);
+						tally = clientServer.getCandidatesByState();					
+					}
+					else
+						tally = "No votes";
+					
+					//serverList.add(clientServer);
 
 					System.out.println("All Candidate Results In " + stateInput + ":  " + tally + ".");
 
 				}
 				else if (userInput.equals("4"))
 				{
+
 					Hashtable<String, Integer> nationalResults = new Hashtable<String, Integer>();
 
 					// Spawn a channel for each state and grab the candidate
@@ -110,7 +131,7 @@ public class VoteClient
 					{
 						clientServer = new VoteServer(stateList.get(i));
 						Hashtable tempHT = clientServer.getResultsByStateHT();
-						serverList.add(clientServer);
+						//serverList.add(clientServer);
 
 
 						// Iterate through our temp hash table and add to national results
@@ -135,6 +156,7 @@ public class VoteClient
 					}
 
 					System.out.println("National Results:  " + nationalResults.toString());
+
 				}			
 				else if (userInput.equals("5"))
 				{

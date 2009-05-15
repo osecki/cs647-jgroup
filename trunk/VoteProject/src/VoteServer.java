@@ -114,6 +114,8 @@ public class VoteServer extends ReceiverAdapter
 
 	public byte[] getState()				
 	{
+		System.out.println("getState");
+		
 		synchronized(this.voteTally) 
 		{
 			try 
@@ -131,6 +133,8 @@ public class VoteServer extends ReceiverAdapter
 	@SuppressWarnings("unchecked")
 	public void setState(byte[] new_state) 
 	{
+		System.out.println("setState");
+		
 		try 
 		{        	
 			Hashtable<String, Integer> tempVoteTally = (Hashtable<String, Integer>)(Util.objectFromByteBuffer(new_state));
