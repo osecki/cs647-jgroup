@@ -36,10 +36,7 @@ public class VoteServer extends ReceiverAdapter
 		channel = new JChannel();
 		channel.setReceiver(this);
 		channel.connect(state);							//join the channel for the state we want
-		channel.getState(null, 10000);
-		
-		//maybe spawn a thread here to signify a heartbeat?
-		
+		channel.getState(null, 10000);	
 	}	
 	
 	public void stop()
@@ -72,16 +69,24 @@ public class VoteServer extends ReceiverAdapter
 	public String getCandidatesByState() throws Exception
 	{
 		start();
-		
 		return voteTally.toString();
 	}
 	
-	public Hashtable getResultsByCandidate(String cand) throws Exception
+	public int getResultsByCandidate(String cand) throws Exception
+	{	
+		int ret = 0;
+		
+		start();
+		
+		if (voteTally.containsKey(cand))
+			ret = voteTally.get(cand);
+		
+		return ret;
+	}
+	
+	public Hashtable getResultsByStateHT() throws Exception
 	{
-		channel = new JChannel();
-		channel.setReceiver(this);
-		channel.connect(state);					//join the channel for the state we want
-		channel.getState(null, 10000);
+		start();
 		
 		return voteTally;
 	}
@@ -109,8 +114,10 @@ public class VoteServer extends ReceiverAdapter
 	
 	public void viewAccepted(View new_view)
 	{
+		//This is called whenever someone joins or leaves the group
+		
 		//debug
-		//System.out.println("viewAccepted - " + new_view);
+		System.out.println("viewAccepted - " + new_view);
 	}
 	
     public byte[] getState() 

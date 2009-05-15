@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
 
 public class VoteClient 
 {
@@ -65,18 +66,24 @@ public class VoteClient
 					//Vote
 					clientServer = new VoteServer(stateInput);
 					clientServer.vote(candidateInput);
+					serverList.add(clientServer);
 				}
 				else if (userInput.equals("2"))
 				{
-					//implement
-					//is this a national tally for a particular candidate?
+					System.out.print("Select A Candidate: ");
+					candidateInput = br.readLine();	
 					
-/*
-					System.out.println();
-					System.out.print("Select A Candidate:");
-					candidateInput = br.readLine();
-					System.out.println(new VoteServer().getResultsByCandidate(candidateInput));
-*/
+					int total = 0;
+					
+					//spawn a channel for each state and grab the candidate
+					for (int i = 0; i < stateList.size(); i++)
+					{
+						clientServer = new VoteServer(stateList.get(i));
+						total = total + clientServer.getResultsByCandidate(candidateInput);
+						serverList.add(clientServer);
+					}
+					
+					System.out.println("National Results For Candidate " + candidateInput + " : " + total);
 				}
 				else if (userInput.equals("3"))
 				{
@@ -86,22 +93,55 @@ public class VoteClient
 					//Get candidates for state
 					clientServer = new VoteServer(stateInput);
 					String tally = clientServer.getCandidatesByState();					
+					serverList.add(clientServer);
+					
 					System.out.println("All Candidate Results In " + stateInput + " : " + tally);
+					
 				}
 				else if (userInput.equals("4"))
 				{
-					//implement
-					//should I iterate a list of all states and open channels and 
-					//aggregate here?
+					Hashtable<String, Integer> nationalResults = new Hashtable<String, Integer>();
+					
+					//spawn a channel for each state and grab the candidate
+					for (int i = 0; i < stateList.size(); i++)
+					{
+						clientServer = new VoteServer(stateList.get(i));
+						Hashtable tempHT = clientServer.getResultsByStateHT();
+						serverList.add(clientServer);
+						
+						
+						//iterate through our temp hash table and add to national results
+						
+						Iterator<String> iter = tempHT.keySet().iterator();
+						
+						while (iter.hasNext())
+						{
+							String cand = iter.next();
+							
+							if (nationalResults.containsKey(cand))
+							{
+								int candidateVoteCount = nationalResults.get(cand);
+								candidateVoteCount = candidateVoteCount + 1;
+								nationalResults.put(cand, candidateVoteCount);   			
+							}
+							else
+							{
+								nationalResults.put(cand, 1);
+							}
+						}	
+					}
+					
+					System.out.println("National Results : " + nationalResults.toString());
 				}			
 				else if (userInput.equals("5"))
 				{
-					//implement
+					int random = (int) ( 0 + Math.random() * serverList.size());
+					serverList.get(random).stop();
 				}
     		} while(!userInput.equals("6"));
 		
-    		//stop
-    		clientServer.stop();
+    		//stop servers
+    		
 		} 
 		catch (Exception e) 
 		{
