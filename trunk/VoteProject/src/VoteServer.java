@@ -111,9 +111,6 @@ public class VoteServer extends ReceiverAdapter
     	{
     		//maybe process a string message for a heartbeat
     	}
-    	        
-        //debug
-        //this.dumpVotes();
     }	
 	
 	public void viewAccepted(View new_view)
@@ -156,10 +153,5 @@ public class VoteServer extends ReceiverAdapter
         {
             e.printStackTrace();
         }
-    }
-    
-    private void dumpVotes()
-    {
-    	System.out.println("Dump of Vote Tally: " + this.voteTally.toString());
     }
 }
