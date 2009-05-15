@@ -39,6 +39,8 @@ public class VoteServer extends ReceiverAdapter
 		channel.setReceiver(this);
 		channel.connect(state);							//join the channel for the state we want
 		channel.getState(null, 10000);	
+		
+		//maybe start a new thread for a heartbeat?
 	}	
 	
 	public void stop()
