@@ -90,9 +90,12 @@ public class VoteClient
 					// Spawn a channel for each state and grab the candidate
 					for (int i = 0; i < stateList.size(); i++)
 					{
-						clientServer = new VoteServer(stateList.get(i));
-						total = total + clientServer.getResultsByCandidate(candidateInput);
-						//serverList.add(clientServer);
+						//if the server group exists, use that group
+						if (serverList.containsKey(stateList.get(i)))
+						{
+							clientServer = serverList.get(stateList.get(i));
+							total = total + clientServer.getResultsByCandidate(candidateInput);
+						}
 					}
 
 					System.out.println("National Results For Candidate " + candidateInput + ":  " + total + ".");
@@ -129,34 +132,36 @@ public class VoteClient
 					// Spawn a channel for each state and grab the candidate
 					for (int i = 0; i < stateList.size(); i++)
 					{
-						clientServer = new VoteServer(stateList.get(i));
-						Hashtable tempHT = clientServer.getResultsByStateHT();
-						//serverList.add(clientServer);
-
-
-						// Iterate through our temp hash table and add to national results
-
-						Iterator<String> iter = tempHT.keySet().iterator();
-
-						while (iter.hasNext())
+						
+						//if the server group exists, use that group
+						if (serverList.containsKey(stateList.get(i)))
 						{
-							String cand = iter.next();
+							clientServer = serverList.get(stateList.get(i));
+							Hashtable tempHT = clientServer.getResultsByStateHT();
+						
+							// Iterate through our temp hash table and add to national results
 
-							if (nationalResults.containsKey(cand))
+							Iterator<String> iter = tempHT.keySet().iterator();
+
+							while (iter.hasNext())
 							{
-								int candidateVoteCount = nationalResults.get(cand);
-								candidateVoteCount = candidateVoteCount + 1;
-								nationalResults.put(cand, candidateVoteCount);   			
-							}
-							else
-							{
-								nationalResults.put(cand, 1);
-							}
-						}	
+								String cand = iter.next();
+	
+								if (nationalResults.containsKey(cand))
+								{
+									int candidateVoteCount = nationalResults.get(cand);
+									candidateVoteCount = candidateVoteCount + 1;
+									nationalResults.put(cand, candidateVoteCount);   			
+								}
+								else
+								{
+									nationalResults.put(cand, 1);
+								}
+							}	
+						}
 					}
 
 					System.out.println("National Results:  " + nationalResults.toString());
-
 				}			
 				else if (userInput.equals("5"))
 				{

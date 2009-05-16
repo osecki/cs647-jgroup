@@ -114,7 +114,6 @@ public class VoteServer extends ReceiverAdapter
 
 	public byte[] getState()				
 	{
-		System.out.println("getState");
 		
 		synchronized(this.voteTally) 
 		{
@@ -133,7 +132,6 @@ public class VoteServer extends ReceiverAdapter
 	@SuppressWarnings("unchecked")
 	public void setState(byte[] new_state) 
 	{
-		System.out.println("setState");
 		
 		try 
 		{        	
