@@ -12,17 +12,13 @@ public class VoteServer extends ReceiverAdapter
 	private JChannel channel;
 	public java.util.Hashtable<String, Integer> voteTally;
 
-	// Constructor 1
-	public VoteServer()
-	{
-		voteTally = new Hashtable<String, Integer>();	// Create data structure
-	}
-
-	// Constructor 2
-	public VoteServer(String st)
+	// Constructor
+	public VoteServer(String st) throws Exception
 	{
 		voteTally = new Hashtable<String, Integer>();	// Create data structure
 		state = st;										// Save state for channel connection
+
+		start();
 	}
 
 	public void start() throws Exception
@@ -45,7 +41,7 @@ public class VoteServer extends ReceiverAdapter
 	public void vote(String cand) throws Exception
 	{
 		// Add candidate vote to data structure and propagate
-		start();
+		//start();
 
 		if (voteTally.containsKey(cand))
 		{
@@ -64,7 +60,7 @@ public class VoteServer extends ReceiverAdapter
 
 	public String getCandidatesByState() throws Exception
 	{
-		start();
+		//start();
 		return voteTally.toString();
 	}
 
@@ -72,7 +68,7 @@ public class VoteServer extends ReceiverAdapter
 	{	
 		int ret = 0;
 
-		start();
+		//start();
 
 		if (voteTally.containsKey(cand))
 			ret = voteTally.get(cand);
@@ -82,7 +78,7 @@ public class VoteServer extends ReceiverAdapter
 
 	public Hashtable<String, Integer> getResultsByStateHT() throws Exception
 	{
-		start();
+		//start();
 		return voteTally;
 	}
 

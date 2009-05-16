@@ -29,10 +29,6 @@ public class VoteClient
 			VoteServer server2 = new VoteServer("PA");
 			VoteServer server3 = new VoteServer("NY");
 
-			server1.start();
-			server2.start();
-			server3.start();
-
 			serverList.put("NJ", server1);
 			serverList.put("PA", server2);
 			serverList.put("NY", server3);
