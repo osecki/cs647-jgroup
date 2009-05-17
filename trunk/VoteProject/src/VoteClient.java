@@ -133,8 +133,8 @@ public class VoteClient
 						if (serverList.containsKey(stateList.get(i)))
 						{
 							clientServer = serverList.get(stateList.get(i));
-							Hashtable tempHT = clientServer.getResultsByStateHT();
-						
+							Hashtable<String, Integer> tempHT = clientServer.getResultsByStateHT();
+							
 							// Iterate through our temp hash table and add to national results
 
 							Iterator<String> iter = tempHT.keySet().iterator();
@@ -146,7 +146,7 @@ public class VoteClient
 								if (nationalResults.containsKey(cand))
 								{
 									int candidateVoteCount = nationalResults.get(cand);
-									candidateVoteCount = candidateVoteCount + 1;
+									candidateVoteCount = candidateVoteCount + tempHT.get(cand);
 									nationalResults.put(cand, candidateVoteCount);   			
 								}
 								else
