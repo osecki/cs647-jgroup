@@ -165,7 +165,21 @@ public class VoteClient
 				{
 					// Randomly choose a server in the list to crash
 					int random = (int) ( 0 + Math.random() * serverList.size());
-					serverList.get(random).stop();
+					int servCount = 0;
+					
+					while(serverList.elements().hasMoreElements())
+					{
+						if (servCount == random)
+						{
+							VoteServer serv = serverList.elements().nextElement();
+							serv.stop();
+							break;
+						}
+						else
+						{
+							servCount = servCount + 1;
+						}
+					}
 				}
 			} while(!userInput.equals("6"));
 		} 
