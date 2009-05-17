@@ -135,6 +135,8 @@ public class VoteClient
 							clientServer = serverList.get(stateList.get(i));
 							Hashtable<String, Integer> tempHT = clientServer.getResultsByStateHT();
 							
+							//System.out.println(tempHT);
+							
 							// Iterate through our temp hash table and add to national results
 
 							Iterator<String> iter = tempHT.keySet().iterator();
@@ -151,7 +153,7 @@ public class VoteClient
 								}
 								else
 								{
-									nationalResults.put(cand, 1);
+									nationalResults.put(cand, tempHT.get(cand));
 								}
 							}	
 						}
