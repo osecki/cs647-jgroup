@@ -152,25 +152,12 @@ public class VoteClient
 				}			
 				else if (userInput.equals("5"))
 				{
-/*
-					// Randomly choose a server in the list to crash
-					int random = (int) ( 0 + Math.random() * serverList.size());
-					int servCount = 0;
+					//Randomly choose a server state group to crash
+					int random = (int) ( 0 + Math.random() * servers.size());
+					ArrayList<VoteServer> stateServers = (ArrayList<VoteServer>)servers.values().toArray()[random];
 					
-					while(serverList.elements().hasMoreElements())
-					{
-						if (servCount == random)
-						{
-							VoteServer serv = serverList.elements().nextElement();
-							serv.stop();
-							break;
-						}
-						else
-						{
-							servCount = servCount + 1;
-						}
-					}
-	*/
+					int randomServer = (int) ( 0 + Math.random() * stateServers.size());
+					stateServers.get(randomServer).stop();
 				}
 			} while(!userInput.equals("6"));
 		} 
