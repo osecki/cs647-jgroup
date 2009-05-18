@@ -5,34 +5,36 @@ import java.util.Iterator;
 
 public class VoteClient 
 {
-
+	//Data structure to keep track of servers
+	public static Hashtable<String, ArrayList<VoteServer>> servers;
+	
 	public static void main(String[] args) 
-	{
+	{		
 		// Variables needed are defined here
 		String userInput;
 		String stateInput;
 		String candidateInput;
-		Hashtable<String, VoteServer> serverList;
-		ArrayList<String> stateList = new ArrayList<String>();
 		VoteServer clientServer = null;
 
 		try 
 		{
-			// Create new server list
-			serverList = new Hashtable<String, VoteServer>();
+			//Create master server list
+			servers = new Hashtable<String, ArrayList<VoteServer>>();
 
 			// Get a reader to get client input from console
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-			// Start up 3 initial servers
-			VoteServer server1 = new VoteServer("NJ");
-			VoteServer server2 = new VoteServer("PA");
-			VoteServer server3 = new VoteServer("NY");
-
-			serverList.put("NJ", server1);
-			serverList.put("PA", server2);
-			serverList.put("NY", server3);
-
+			// Start up 3 initial servers andadd initial servers to list
+			servers.put("NJ", new ArrayList<VoteServer>());
+			servers.get("NJ").add(new VoteServer("NJ"));
+			
+			servers.put("PA", new ArrayList<VoteServer>());
+			servers.get("PA").add(new VoteServer("PA"));
+			
+			servers.put("NY", new ArrayList<VoteServer>());
+			servers.get("NY").add(new VoteServer("NY"));
+			
+			
 			// Loop which runs the menu for the client until quit is chosen
 			do
 			{
@@ -55,24 +57,22 @@ public class VoteClient
 					System.out.print("Select A State:  ");
 					stateInput = br.readLine();
 
-					// Add state to global state list
-					if (! stateList.contains(stateInput))
-						stateList.add(stateInput);
-
 					System.out.print("Select A Candidate:  ");
 					candidateInput = br.readLine();					
 
 					//if the server group exists, use that group and vote
-					if (serverList.containsKey(stateInput))
+					if (servers.containsKey(stateInput))
 					{
-						clientServer = serverList.get(stateInput);
-						clientServer.vote(candidateInput);
+						//grab the oldest server
+						if (servers.get(stateInput).size() > 0)
+							servers.get(stateInput).get(0).vote(candidateInput);
 					}
 					else		//create the server and vote
 					{
-						clientServer = new VoteServer(stateInput);
-						clientServer.vote(candidateInput);
-						serverList.put(stateInput, clientServer);						
+						VoteServer server = new VoteServer(stateInput);
+						servers.put(stateInput, new ArrayList<VoteServer>());
+						servers.get(stateInput).add(server);
+						server.vote(candidateInput);						
 					}
 				}
 				else if (userInput.equals("2"))
@@ -84,66 +84,55 @@ public class VoteClient
 					int total = 0;
 
 					// Spawn a channel for each state and grab the candidate
-					for (int i = 0; i < stateList.size(); i++)
+					Iterator<String> iter =  servers.keySet().iterator();
+					
+					while(iter.hasNext())
 					{
-						//if the server group exists, use that group
-						if (serverList.containsKey(stateList.get(i)))
-						{
-							clientServer = serverList.get(stateList.get(i));
-							total = total + clientServer.getResultsByCandidate(candidateInput);
-						}
+						String state = iter.next();
+						
+						ArrayList<VoteServer> stateServers = servers.get(state);
+						
+						if (stateServers.size() > 0)
+							total = total + stateServers.get(0).getResultsByCandidate(candidateInput);
 					}
-
+					
 					System.out.println("National Results For Candidate " + candidateInput + ":  " + total + ".");
 
 				}
 				else if (userInput.equals("3"))
 				{
-					String tally = "";
+					String tally = "No votes";
 					
 					System.out.print("Select A State:  ");
 					stateInput = br.readLine();				
 
-					// Get candidates for state
-					//clientServer = new VoteServer(stateInput);
+					if (servers.containsKey(stateInput))
+						if (servers.get(stateInput).size() > 0)
+							tally = servers.get(stateInput).get(0).getCandidatesByState();
 					
-					if (serverList.containsKey(stateInput))
-					{
-						clientServer = serverList.get(stateInput);
-						tally = clientServer.getCandidatesByState();					
-					}
-					else
-						tally = "No votes";
-					
-					//serverList.add(clientServer);
-
 					System.out.println("All Candidate Results In " + stateInput + ":  " + tally + ".");
 
 				}
 				else if (userInput.equals("4"))
 				{
+					Hashtable<String, Integer> nationalResults = new Hashtable<String, Integer>();					
+					Iterator<ArrayList<VoteServer>> iter = servers.values().iterator();
 
-					Hashtable<String, Integer> nationalResults = new Hashtable<String, Integer>();
-
-					// Spawn a channel for each state and grab the candidate
-					for (int i = 0; i < stateList.size(); i++)
+					while(iter.hasNext())
 					{
+						ArrayList<VoteServer> stateServers = iter.next();
 						
-						//if the server group exists, use that group
-						if (serverList.containsKey(stateList.get(i)))
+						if (stateServers.size() > 0)
 						{
-							clientServer = serverList.get(stateList.get(i));
-							Hashtable<String, Integer> tempHT = clientServer.getResultsByStateHT();
-							
-							//System.out.println(tempHT);
+							Hashtable<String, Integer> tempHT = stateServers.get(0).getResultsByStateHT();
 							
 							// Iterate through our temp hash table and add to national results
 
-							Iterator<String> iter = tempHT.keySet().iterator();
+							Iterator<String> iter2 = tempHT.keySet().iterator();
 
-							while (iter.hasNext())
+							while (iter2.hasNext())
 							{
-								String cand = iter.next();
+								String cand = iter2.next();
 	
 								if (nationalResults.containsKey(cand))
 								{
@@ -155,14 +144,15 @@ public class VoteClient
 								{
 									nationalResults.put(cand, tempHT.get(cand));
 								}
-							}	
+							}								
 						}
 					}
-
+					
 					System.out.println("National Results:  " + nationalResults.toString());
 				}			
 				else if (userInput.equals("5"))
 				{
+/*
 					// Randomly choose a server in the list to crash
 					int random = (int) ( 0 + Math.random() * serverList.size());
 					int servCount = 0;
@@ -180,6 +170,7 @@ public class VoteClient
 							servCount = servCount + 1;
 						}
 					}
+	*/
 				}
 			} while(!userInput.equals("6"));
 		} 
@@ -187,6 +178,24 @@ public class VoteClient
 		{
 			e.printStackTrace();
 			System.out.println("Error during initial server initiation or during menu loop.");
+		}
+	}
+	
+	private static void DumpServers(Hashtable<String, ArrayList<VoteServer>> serverList)
+	{
+		Iterator<String> iter = serverList.keySet().iterator();
+		
+		while (iter.hasNext())
+		{
+			String state = iter.next();
+			
+			ArrayList<VoteServer> stateServers = serverList.get(state);
+			
+			for (int i = 0; i < stateServers.size(); i++)
+			{
+				VoteServer server = stateServers.get(i);
+				System.out.println("State: " + state + " (" + i + ") : " + server.voteTally);
+			}
 		}
 	}
 }
