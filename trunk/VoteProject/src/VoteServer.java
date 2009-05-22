@@ -17,6 +17,10 @@ public class VoteServer extends ReceiverAdapter
 	private String state;
 	private JChannel channel;
 
+	// Health check thread
+	private HealthCheck healthThread;
+	private boolean isAlive;
+	
 	// global state ;   key=state;   value = <key = candidate; value = count>
 	public Hashtable<String, Hashtable<String, Integer>> globalTally;
 	
@@ -24,13 +28,14 @@ public class VoteServer extends ReceiverAdapter
 	// Constructor
 	public VoteServer(String st) throws Exception
 	{
+		healthThread = new HealthCheck();
+		healthThread.setServer(this);
+		
 		globalTally = new Hashtable<String, Hashtable<String, Integer>>();
 		state = st;				
 		
 		//add an entry in the global tally for our state
 		globalTally.put(state, new Hashtable<String, Integer>());
-		
-		start();
 	}
 	
 	public Address getAddress()
@@ -52,10 +57,15 @@ public class VoteServer extends ReceiverAdapter
 		channel.setReceiver(this);
 		channel.connect(state);							// Join the channel for the state we want
 		channel.getState(null, 10000);
+	
+		//start the health check
+		isAlive = true;
+		healthThread.start();
 	}	
 
 	public void stop()
 	{
+		isAlive = false;
 		System.out.println("State Server: " + state + " : " + channel.getLocalAddressAsString() + " has stopped");		
 		channel.disconnect();
 	}
@@ -155,6 +165,8 @@ public class VoteServer extends ReceiverAdapter
 
 		if (msg.getObject() instanceof Hashtable)
 		{
+			//our state
+			
 			Hashtable<String, Hashtable<String, Integer>> rcvdGlobalTally = (Hashtable<String, Hashtable<String,Integer>>)msg.getObject();
 
 			synchronized(globalTally)
@@ -162,6 +174,11 @@ public class VoteServer extends ReceiverAdapter
 				globalTally = rcvdGlobalTally;
 			}
 		}	
+		else if (msg.getObject() instanceof String)
+		{
+			//our healthcheck
+			
+		}
 	}	
 
 	public void viewAccepted(View new_view)
@@ -203,5 +220,12 @@ public class VoteServer extends ReceiverAdapter
 		{
 			e.printStackTrace();
 		}	
+	}
+	
+	public void ping() throws ChannelNotConnectedException, ChannelClosedException
+	{
+		//send a healthcheck to all members in our group
+		Message message = new Message(null, null, "ping");
+		channel.send(message);
 	}
 }
