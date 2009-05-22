@@ -3,9 +3,13 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 
+import org.jgroups.ChannelClosedException;
+import org.jgroups.ChannelNotConnectedException;
+
 public class VoteClient 
 {
 	//Data structure to keep track of servers
+	//key: state;  value:  arraylist of VoteServers in that cluster
 	public static Hashtable<String, ArrayList<VoteServer>> servers;
 	
 	public static void main(String[] args) 
@@ -14,7 +18,6 @@ public class VoteClient
 		String userInput;
 		String stateInput;
 		String candidateInput;
-		VoteServer clientServer = null;
 
 		try 
 		{
@@ -24,7 +27,7 @@ public class VoteClient
 			// Get a reader to get client input from console
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-			// Start up 3 initial servers andadd initial servers to list
+			// Start up 3 initial servers and add initial servers to list
 			servers.put("NJ", new ArrayList<VoteServer>());
 			servers.get("NJ").add(new VoteServer("NJ"));
 			
@@ -65,14 +68,29 @@ public class VoteClient
 					{
 						//grab the oldest server
 						if (servers.get(stateInput).size() > 0)
-							servers.get(stateInput).get(0).vote(candidateInput);
+						{
+							VoteServer server = servers.get(stateInput).get(0);
+							
+							//vote on the server
+							server.vote(stateInput, candidateInput);
+							
+							//broadcast state
+							broadcastState(server.getState());
+						}
 					}
-					else		//create the server and vote
+					else
 					{
-						VoteServer server = new VoteServer(stateInput);
+						//vote on a random server
+						VoteServer randomServer = getRandomServer();
+						randomServer.vote(stateInput, candidateInput);
+
+						//spawn a new server for the state that doesn't exist
 						servers.put(stateInput, new ArrayList<VoteServer>());
-						servers.get(stateInput).add(server);
-						server.vote(candidateInput);						
+						servers.get(stateInput).add(new VoteServer(stateInput));
+						
+						//broadcast state
+						broadcastState(randomServer.getState());
+
 					}
 				}
 				else if (userInput.equals("2"))
@@ -115,40 +133,8 @@ public class VoteClient
 				}
 				else if (userInput.equals("4"))
 				{
-					Hashtable<String, Integer> nationalResults = new Hashtable<String, Integer>();					
-					Iterator<ArrayList<VoteServer>> iter = servers.values().iterator();
-
-					while(iter.hasNext())
-					{
-						ArrayList<VoteServer> stateServers = iter.next();
-						
-						if (stateServers.size() > 0)
-						{
-							Hashtable<String, Integer> tempHT = stateServers.get(0).getResultsByStateHT();
-							
-							// Iterate through our temp hash table and add to national results
-
-							Iterator<String> iter2 = tempHT.keySet().iterator();
-
-							while (iter2.hasNext())
-							{
-								String cand = iter2.next();
-	
-								if (nationalResults.containsKey(cand))
-								{
-									int candidateVoteCount = nationalResults.get(cand);
-									candidateVoteCount = candidateVoteCount + tempHT.get(cand);
-									nationalResults.put(cand, candidateVoteCount);   			
-								}
-								else
-								{
-									nationalResults.put(cand, tempHT.get(cand));
-								}
-							}								
-						}
-					}
-					
-					System.out.println("National Results:  " + nationalResults.toString());
+					//Select a random server and get national results
+					System.out.println("National Results:  " + getRandomServer().getNationalResults());
 				}			
 				else if (userInput.equals("5"))
 				{
@@ -157,6 +143,7 @@ public class VoteClient
 					ArrayList<VoteServer> stateServers = (ArrayList<VoteServer>)servers.values().toArray()[random];
 					
 					int randomServer = (int) ( 0 + Math.random() * stateServers.size());
+					
 					stateServers.get(randomServer).stop();
 				}
 			} while(!userInput.equals("6"));
@@ -168,8 +155,20 @@ public class VoteClient
 		}
 	}
 	
+	private static VoteServer getRandomServer()
+	{
+		//Randomly choose a server state cluster
+		int random = (int) ( 0 + Math.random() * servers.size());
+		ArrayList<VoteServer> stateServers = (ArrayList<VoteServer>)servers.values().toArray()[random];
+		
+		//Randomly choose a server in that cluster
+		int randomServer = (int) ( 0 + Math.random() * stateServers.size());
+		return stateServers.get(randomServer);		
+	}
+	
 	private static void DumpServers(Hashtable<String, ArrayList<VoteServer>> serverList)
 	{
+/*		
 		Iterator<String> iter = serverList.keySet().iterator();
 		
 		while (iter.hasNext())
@@ -182,6 +181,28 @@ public class VoteClient
 			{
 				VoteServer server = stateServers.get(i);
 				System.out.println("State: " + state + " (" + i + ") : " + server.voteTally);
+			}
+		}
+*/		
+	}
+	
+	private static void broadcastState(byte[] globalState) throws ChannelNotConnectedException, ChannelClosedException
+	{
+		Iterator<String> iter = servers.keySet().iterator();
+	
+		//loop through each of our states
+		
+		while(iter.hasNext())
+		{
+			String state = iter.next();
+			
+			if (servers.get(state).size() > 0)
+			{
+				//grab the oldest state server and set its state and
+				//propogate to all servers in the cluster
+				
+				servers.get(state).get(0).setState(globalState);
+				servers.get(state).get(0).sendStateToCluster();
 			}
 		}
 	}
