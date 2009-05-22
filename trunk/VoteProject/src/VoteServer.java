@@ -24,6 +24,9 @@ public class VoteServer extends ReceiverAdapter
 	// global state ;   key=state;   value = <key = candidate; value = count>
 	public Hashtable<String, Hashtable<String, Integer>> globalTally;
 	
+	// group membership object
+	private View groupMembership;
+	
 	
 	// Constructor
 	public VoteServer(String st) throws Exception
@@ -176,16 +179,16 @@ public class VoteServer extends ReceiverAdapter
 		}	
 		else if (msg.getObject() instanceof String)
 		{
-			//our healthcheck
+			//our healthcheck has been received.  What should we do with it?
 			
 		}
 	}	
 
+	// This is called whenever someone joins or leaves the group	
 	public void viewAccepted(View new_view)
 	{
-		// This is called whenever someone joins or leaves the group
-		//System.out.println("View Changed:  " + channel.getLocalAddress().toString());
-		//System.out.println("Servers In Cluster " + this.state + ":   " + new_view.printDetails());
+		//save the group membership view
+		groupMembership = new_view;
 	}
 
 	public byte[] getState()				
