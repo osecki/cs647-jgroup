@@ -1,26 +1,49 @@
+import org.jgroups.Address;
+import org.jgroups.ChannelClosedException;
+import org.jgroups.ChannelNotConnectedException;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.util.Util;
+
+import java.io.Serializable;
 import java.util.Hashtable;
+import java.util.Iterator;
 
 public class VoteServer extends ReceiverAdapter
 {
 	// Variables used in this class
 	private String state;
 	private JChannel channel;
-	public java.util.Hashtable<String, Integer> voteTally;
 
+	// global state ;   key=state;   value = <key = candidate; value = count>
+	public Hashtable<String, Hashtable<String, Integer>> globalTally;
+	
+	
 	// Constructor
 	public VoteServer(String st) throws Exception
 	{
-		voteTally = new Hashtable<String, Integer>();	// Create data structure
-		state = st;										// Save state for channel connection
-
+		globalTally = new Hashtable<String, Hashtable<String, Integer>>();
+		state = st;				
+		
+		//add an entry in the global tally for our state
+		globalTally.put(state, new Hashtable<String, Integer>());
+		
 		start();
 	}
+	
+	public Address getAddress()
+	{
+		return channel.getLocalAddress();
+	}
 
+	public void sendStateToCluster() throws ChannelNotConnectedException, ChannelClosedException
+	{
+		Message message = new Message(null, null, globalTally);
+		channel.send(message);
+	}
+	
 	public void start() throws Exception
 	{
 		System.out.println("\nStarting New Channel - Joining Cluster");
@@ -28,58 +51,102 @@ public class VoteServer extends ReceiverAdapter
 		channel = new JChannel();
 		channel.setReceiver(this);
 		channel.connect(state);							// Join the channel for the state we want
-		channel.getState(null, 10000);	
-
-		// TODO start a new thread for a heartbeat?
+		channel.getState(null, 10000);
 	}	
 
 	public void stop()
 	{
+		System.out.println("State Server: " + state + " : " + channel.getLocalAddressAsString() + " has stopped");		
 		channel.disconnect();
 	}
 
-	public void vote(String cand) throws Exception
+	public void vote(String state, String cand) throws Exception
 	{
-		// Add candidate vote to data structure and propagate
-		//start();
-
-		if (voteTally.containsKey(cand))
+		if (globalTally.containsKey(state))		//if the state exists
 		{
-			int candidateVoteCount = voteTally.get(cand);
-			candidateVoteCount = candidateVoteCount + 1;
-			voteTally.put(cand, candidateVoteCount);   			
+			if (globalTally.get(state).containsKey(cand))  //if the candidate exists
+			{
+				//increment the vote count
+				int candidateVoteCount = globalTally.get(state).get(cand);
+				candidateVoteCount = candidateVoteCount + 1;
+				globalTally.get(state).put(cand, candidateVoteCount); 
+			}
+			else											//candidate does not exist
+			{
+				//set an initial vote count
+				globalTally.get(state).put(cand, 1);
+			}
 		}
-		else
+		else									//state does not exist
 		{
-			voteTally.put(cand, 1);
+			//create entry for the state
+			globalTally.put(state, new Hashtable<String, Integer>());
+			
+			//add an entry for the candidate
+			globalTally.get(state).put(cand, 1);
 		}
-
-		Message msg = new Message(null, null, voteTally);
-		channel.send(msg);			
 	}
 
 	public String getCandidatesByState() throws Exception
 	{
-		//start();
-		return voteTally.toString();
+		String ret = "{}";
+		
+		if (globalTally.containsKey(state))
+			ret = globalTally.get(state).toString();
+		
+		//if we have no votes, return user friendly message
+		if (ret.equals("{}"))
+			ret = "No votes";
+		
+		return ret;
 	}
 
 	public int getResultsByCandidate(String cand) throws Exception
 	{	
 		int ret = 0;
-
-		//start();
-
-		if (voteTally.containsKey(cand))
-			ret = voteTally.get(cand);
-
+		
+		if (globalTally.containsKey(state))
+			if (globalTally.get(state).containsKey(cand))
+				ret = globalTally.get(state).get(cand);		
+		
 		return ret;
 	}
 
-	public Hashtable<String, Integer> getResultsByStateHT() throws Exception
+	public String getNationalResults() throws Exception
 	{
-		//start();
-		return voteTally;
+		Hashtable<String, Integer> results = new Hashtable<String, Integer>();
+		
+		//iterate through states
+		Iterator<String> iter = globalTally.keySet().iterator();
+		
+		while (iter.hasNext())
+		{
+			String state = iter.next();
+			
+			Hashtable<String, Integer> stateResults = globalTally.get(state);
+			
+			//iterate state results
+			Iterator<String> iterState = stateResults.keySet().iterator();
+			
+			while (iterState.hasNext())
+			{
+				String candidate = iterState.next();
+				int stateCount = stateResults.get(candidate);
+				
+				//if candidate is in table, increment count
+				if (results.containsKey(candidate))
+				{
+					int natlCount = results.get(candidate);
+					results.put(candidate, natlCount + stateCount);	
+				}
+				else
+				{
+					results.put(candidate, stateCount);
+				}
+			}
+		}
+		
+		return results.toString();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -88,17 +155,13 @@ public class VoteServer extends ReceiverAdapter
 
 		if (msg.getObject() instanceof Hashtable)
 		{
-			Hashtable<String, Integer> rcvdVoteTally = (Hashtable<String, Integer>)msg.getObject();
+			Hashtable<String, Hashtable<String, Integer>> rcvdGlobalTally = (Hashtable<String, Hashtable<String,Integer>>)msg.getObject();
 
-			synchronized(voteTally)
+			synchronized(globalTally)
 			{
-				voteTally = rcvdVoteTally;
+				globalTally = rcvdGlobalTally;
 			}
-		}
-		else
-		{
-			// TODO Process a string message for a heartbeat?
-		}
+		}	
 	}	
 
 	public void viewAccepted(View new_view)
@@ -110,12 +173,11 @@ public class VoteServer extends ReceiverAdapter
 
 	public byte[] getState()				
 	{
-		
-		synchronized(this.voteTally) 
+		synchronized(globalTally) 
 		{
 			try 
 			{
-				return Util.objectToByteBuffer(this.voteTally);
+				return Util.objectToByteBuffer(globalTally);
 			}
 			catch(Exception e) 
 			{
@@ -128,19 +190,18 @@ public class VoteServer extends ReceiverAdapter
 	@SuppressWarnings("unchecked")
 	public void setState(byte[] new_state) 
 	{
-		
 		try 
 		{        	
-			Hashtable<String, Integer> tempVoteTally = (Hashtable<String, Integer>)(Util.objectFromByteBuffer(new_state));
+			Hashtable<String, Hashtable<String, Integer>> tempGlobalTally = (Hashtable<String, Hashtable<String, Integer>>)(Util.objectFromByteBuffer(new_state));
 
-			synchronized(this.voteTally) 
+			synchronized(globalTally) 
 			{
-				this.voteTally = tempVoteTally;
+				globalTally = tempGlobalTally;
 			}
 		}
 		catch(Exception e) 
 		{
 			e.printStackTrace();
-		}
+		}	
 	}
 }
