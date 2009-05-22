@@ -166,26 +166,6 @@ public class VoteClient
 		return stateServers.get(randomServer);		
 	}
 	
-	private static void DumpServers(Hashtable<String, ArrayList<VoteServer>> serverList)
-	{
-/*		
-		Iterator<String> iter = serverList.keySet().iterator();
-		
-		while (iter.hasNext())
-		{
-			String state = iter.next();
-			
-			ArrayList<VoteServer> stateServers = serverList.get(state);
-			
-			for (int i = 0; i < stateServers.size(); i++)
-			{
-				VoteServer server = stateServers.get(i);
-				System.out.println("State: " + state + " (" + i + ") : " + server.voteTally);
-			}
-		}
-*/		
-	}
-	
 	private static void broadcastState(byte[] globalState) throws ChannelNotConnectedException, ChannelClosedException
 	{
 		Iterator<String> iter = servers.keySet().iterator();
