@@ -37,6 +37,8 @@ public class VoteServer extends ReceiverAdapter
 		
 		// Add an entry in the global tally for our state
 		globalTally.put(state, new Hashtable<String, Integer>());
+		
+		start();
 	}
 	
 	public Address getAddress()
