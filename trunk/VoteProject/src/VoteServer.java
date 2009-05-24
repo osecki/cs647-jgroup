@@ -6,10 +6,9 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.util.Util;
-
-import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Iterator;
+//import java.io.Serializable;
 
 public class VoteServer extends ReceiverAdapter
 {
@@ -21,12 +20,11 @@ public class VoteServer extends ReceiverAdapter
 	private HealthCheck healthThread;
 	private boolean isAlive;
 	
-	// global state ;   key=state;   value = <key = candidate; value = count>
+	// Global state ;  Key=state;  Value = <Key = candidate; Value = count>
 	public Hashtable<String, Hashtable<String, Integer>> globalTally;
 	
-	// group membership object
+	// Group membership object
 	private View groupMembership;
-	
 	
 	// Constructor
 	public VoteServer(String st) throws Exception
@@ -37,7 +35,7 @@ public class VoteServer extends ReceiverAdapter
 		globalTally = new Hashtable<String, Hashtable<String, Integer>>();
 		state = st;				
 		
-		//add an entry in the global tally for our state
+		// Add an entry in the global tally for our state
 		globalTally.put(state, new Hashtable<String, Integer>());
 	}
 	
@@ -58,10 +56,10 @@ public class VoteServer extends ReceiverAdapter
 
 		channel = new JChannel();
 		channel.setReceiver(this);
-		channel.connect(state);							// Join the channel for the state we want
+		channel.connect(state); // Join the channel for the state we want
 		channel.getState(null, 10000);
 	
-		//start the health check
+		// Start the health check
 		isAlive = true;
 		healthThread.start();
 	}	
@@ -69,33 +67,33 @@ public class VoteServer extends ReceiverAdapter
 	public void stop()
 	{
 		isAlive = false;
-		System.out.println("State Server: " + state + " : " + channel.getLocalAddressAsString() + " has stopped");		
+		System.out.println("State Server: " + state + ":  " + channel.getLocalAddressAsString() + " has stopped");		
 		channel.disconnect();
 	}
 
 	public void vote(String state, String cand) throws Exception
 	{
-		if (globalTally.containsKey(state))		//if the state exists
+		if (globalTally.containsKey(state))					// If the state exists
 		{
-			if (globalTally.get(state).containsKey(cand))  //if the candidate exists
+			if (globalTally.get(state).containsKey(cand))  	// If the candidate exists
 			{
-				//increment the vote count
+				// Increment the vote count
 				int candidateVoteCount = globalTally.get(state).get(cand);
 				candidateVoteCount = candidateVoteCount + 1;
 				globalTally.get(state).put(cand, candidateVoteCount); 
 			}
-			else											//candidate does not exist
+			else											// Candidate does not exist
 			{
-				//set an initial vote count
+				// Set an initial vote count
 				globalTally.get(state).put(cand, 1);
 			}
 		}
-		else									//state does not exist
+		else												// State does not exist
 		{
-			//create entry for the state
+			// Create entry for the state
 			globalTally.put(state, new Hashtable<String, Integer>());
 			
-			//add an entry for the candidate
+			// Add an entry for the candidate
 			globalTally.get(state).put(cand, 1);
 		}
 	}
@@ -107,9 +105,9 @@ public class VoteServer extends ReceiverAdapter
 		if (globalTally.containsKey(state))
 			ret = globalTally.get(state).toString();
 		
-		//if we have no votes, return user friendly message
+		// If we have no votes, return user friendly message
 		if (ret.equals("{}"))
-			ret = "No votes";
+			ret = "No votes for this state yet.";
 		
 		return ret;
 	}
@@ -118,9 +116,8 @@ public class VoteServer extends ReceiverAdapter
 	{	
 		int ret = 0;
 		
-		if (globalTally.containsKey(state))
-			if (globalTally.get(state).containsKey(cand))
-				ret = globalTally.get(state).get(cand);		
+		if (globalTally.containsKey(state) && globalTally.get(state).containsKey(cand))
+			ret = globalTally.get(state).get(cand);		
 		
 		return ret;
 	}
@@ -129,7 +126,7 @@ public class VoteServer extends ReceiverAdapter
 	{
 		Hashtable<String, Integer> results = new Hashtable<String, Integer>();
 		
-		//iterate through states
+		// Iterate through states
 		Iterator<String> iter = globalTally.keySet().iterator();
 		
 		while (iter.hasNext())
@@ -138,7 +135,7 @@ public class VoteServer extends ReceiverAdapter
 			
 			Hashtable<String, Integer> stateResults = globalTally.get(state);
 			
-			//iterate state results
+			// Iterate state results
 			Iterator<String> iterState = stateResults.keySet().iterator();
 			
 			while (iterState.hasNext())
@@ -146,7 +143,7 @@ public class VoteServer extends ReceiverAdapter
 				String candidate = iterState.next();
 				int stateCount = stateResults.get(candidate);
 				
-				//if candidate is in table, increment count
+				// If candidate is in table, increment count
 				if (results.containsKey(candidate))
 				{
 					int natlCount = results.get(candidate);
@@ -168,8 +165,7 @@ public class VoteServer extends ReceiverAdapter
 
 		if (msg.getObject() instanceof Hashtable)
 		{
-			//our state
-			
+			// Our state
 			Hashtable<String, Hashtable<String, Integer>> rcvdGlobalTally = (Hashtable<String, Hashtable<String,Integer>>)msg.getObject();
 
 			synchronized(globalTally)
@@ -179,15 +175,15 @@ public class VoteServer extends ReceiverAdapter
 		}	
 		else if (msg.getObject() instanceof String)
 		{
-			//our healthcheck has been received.  What should we do with it?
-			
+			// Our health check has been received.  What should we do with it?
+			// TODO
 		}
 	}	
 
 	// This is called whenever someone joins or leaves the group	
 	public void viewAccepted(View new_view)
 	{
-		//save the group membership view
+		// Save the group membership view
 		groupMembership = new_view;
 	}
 
@@ -227,7 +223,7 @@ public class VoteServer extends ReceiverAdapter
 	
 	public void ping() throws ChannelNotConnectedException, ChannelClosedException
 	{
-		//send a healthcheck to all members in our group
+		// Send a health check to all members in our group
 		Message message = new Message(null, null, "ping");
 		channel.send(message);
 	}
