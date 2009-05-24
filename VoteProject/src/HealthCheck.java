@@ -1,7 +1,6 @@
 import org.jgroups.ChannelClosedException;
 import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.JChannel;
-
+//import org.jgroups.JChannel;
 
 public class HealthCheck extends Thread
 {
