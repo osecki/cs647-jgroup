@@ -13,7 +13,6 @@ import java.util.Iterator;
 public class VoteServer extends ReceiverAdapter
 {
 	// Variables used in this class
-	private VoteClient client;
 	private String state;
 	private JChannel channel;
 
@@ -40,11 +39,6 @@ public class VoteServer extends ReceiverAdapter
 		globalTally.put(state, new Hashtable<String, Integer>());
 		
 		start();
-	}
-	
-	public void setClient(VoteClient cli)
-	{
-		client = cli;
 	}
 	
 	public Address getAddress()
