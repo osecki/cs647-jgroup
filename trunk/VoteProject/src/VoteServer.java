@@ -225,8 +225,12 @@ public class VoteServer extends ReceiverAdapter
 	
 	public void ping() throws ChannelNotConnectedException, ChannelClosedException
 	{
-		// Send a health check to all members in our group
-		Message message = new Message(null, null, "ping");
-		channel.send(message);
+		//if i am the oldest guy in the group, send out the pings to all members
+		if (channel.getLocalAddress().equals(groupMembership.getCreator()))
+		{			
+			// Send a health check to all members in our group
+			Message message = new Message(null, null, "ping");
+			channel.send(message);	
+		}		
 	}
 }
