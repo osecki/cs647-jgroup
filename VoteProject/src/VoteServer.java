@@ -13,6 +13,7 @@ import java.util.Iterator;
 public class VoteServer extends ReceiverAdapter
 {
 	// Variables used in this class
+	private VoteClient client;
 	private String state;
 	private JChannel channel;
 
@@ -39,6 +40,11 @@ public class VoteServer extends ReceiverAdapter
 		globalTally.put(state, new Hashtable<String, Integer>());
 		
 		start();
+	}
+	
+	public void setClient(VoteClient cli)
+	{
+		client = cli;
 	}
 	
 	public Address getAddress()
@@ -224,7 +230,7 @@ public class VoteServer extends ReceiverAdapter
 	}
 	
 	public void ping() throws ChannelNotConnectedException, ChannelClosedException
-	{
+	{		
 		//if i am the oldest guy in the group, send out the pings to all members
 		if (channel.getLocalAddress().equals(groupMembership.getCreator()))
 		{			
