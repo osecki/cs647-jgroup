@@ -23,17 +23,8 @@ public class HealthCheck extends Thread
 				Thread.sleep(5000);			//sleep
 				server.checkPongResponses();
 			} 
-			catch (InterruptedException e) 
+			catch (Exception e) 
 			{
-				e.printStackTrace();
-			} 
-			catch (ChannelNotConnectedException e) 
-			{
-				e.printStackTrace();
-			} 
-			catch (ChannelClosedException e) 
-			{
-				e.printStackTrace();
 			}
 		}
 	}
