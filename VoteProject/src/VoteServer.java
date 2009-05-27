@@ -6,6 +6,8 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.util.Util;
+
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Vector;
@@ -19,7 +21,7 @@ public class VoteServer extends ReceiverAdapter
 
 	// Health check thread
 	private HealthCheck healthThread;
-	private boolean isAlive;
+	public boolean isAlive;
 	private Vector<Address> healthVector;
 	
 	
@@ -74,7 +76,11 @@ public class VoteServer extends ReceiverAdapter
 	{
 		isAlive = false;
 		System.out.println("State Server: " + state + ":  " + channel.getLocalAddressAsString() + " has stopped");		
-		//channel.disconnect();
+	}
+	
+	public void disconn()
+	{
+		channel.disconnect();
 	}
 
 	public void vote(String state, String cand) throws Exception
@@ -227,6 +233,9 @@ public class VoteServer extends ReceiverAdapter
 	// This is called whenever someone joins or leaves the group	
 	public void viewAccepted(View new_view)
 	{
+		System.out.println("*****************************");
+		
+		
 		// Save the group membership view
 		groupMembership = new_view;
 	}
@@ -265,32 +274,70 @@ public class VoteServer extends ReceiverAdapter
 		}	
 	}
 	
-	public void ping() throws ChannelNotConnectedException, ChannelClosedException
+	public void ping()
 	{		
-		//if i am the oldest guy in the group, send out the pings to all members
-		if (channel.getLocalAddress().equals(groupMembership.getCreator()))
-		{			
-			healthVector.clear();
-			
-			//Set health vector to our group members (except me)
-			for (int i = 0; i < groupMembership.getMembers().size(); i++)
-				if (!groupMembership.getMembers().elementAt(i).equals(channel.getLocalAddress()))
-					healthVector.add(groupMembership.getMembers().elementAt(i));
-			
-			// Send a health check to all members in our group
-			Message message = new Message(null, null, "ping");
-			channel.send(message);	
-		}		
+		try
+		{
+			//if i am the oldest guy in the group, send out the pings to all members
+			if (channel.getLocalAddress().equals(groupMembership.getCreator()))
+			{			
+				healthVector.clear();
+				
+				//Set health vector to our group members (except me)
+				for (int i = 0; i < groupMembership.getMembers().size(); i++)
+					if (!groupMembership.getMembers().elementAt(i).equals(channel.getLocalAddress()))
+						healthVector.add(groupMembership.getMembers().elementAt(i));
+				
+				// Send a health check to all members in our group
+				Message message = new Message(null, null, "ping");
+				channel.send(message);	
+			}
+		}
+		catch(Exception ex)
+		{		
+		}
 	}
 	
 	public void checkPongResponses()
 	{
-		//if i am the oldest guy in the group (who sent out the pings)
-		if (channel.getLocalAddress().equals(groupMembership.getCreator()))
+		try
 		{
-			//we have not received a response from some cluster server
-			if (!healthVector.isEmpty())
-				System.out.println("Server: " + healthVector.toString() + " has not responded to heartbeat - failed!");
+			//if i am the oldest guy in the group (who sent out the pings)
+			if (channel.getLocalAddress().equals(groupMembership.getCreator()))
+			{
+				//we have not received a response from some cluster server
+				if (!healthVector.isEmpty())
+				{
+					System.out.println("Server: " + healthVector.toString() + " has not responded to heartbeat - failed!");
+					removeFailedServer(healthVector.elementAt(0));
+				}
+			}			
+		}
+		catch(Exception ex)
+		{
+		}
+	}
+	
+	private void removeFailedServer(Address failedAddress)
+	{
+		//find the failed server by IP address from our servers list
+		
+		Iterator<String> iter = VoteClient.servers.keySet().iterator();
+		
+		while(iter.hasNext())
+		{
+			String state = iter.next();
+			
+			ArrayList<VoteServer> stateServers = VoteClient.servers.get(state);
+			
+			for (int i = 0 ; i < stateServers.size(); i++)
+			{
+				if (stateServers.get(i).getAddress().equals(failedAddress))
+				{
+					stateServers.get(i).disconn();
+					return;
+				}
+			}
 		}
 	}
 }
