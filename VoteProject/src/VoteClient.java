@@ -162,6 +162,9 @@ public class VoteClient
 				else if (userInput.equals("5"))
 				{
 					failedServer = getRandomServer();
+					
+					System.out.println("Killing Server: " + failedServer.getAddress().toString());
+					
 					failedServer.stopHealthCheck();
 				}
 				else if (userInput.equals("6"))
