@@ -75,7 +75,7 @@ public class VoteClient
 				System.out.println("(2) Get Results For A Particular Candidate");
 				System.out.println("(3) Get All Candidate Results For A State");
 				System.out.println("(4) Get National Tally For All Candidates");
-				System.out.println("(5) Kill A Random Server");
+				System.out.println("(5) Kill A Random Server");				
 				System.out.println("(6) Exit");
 				System.out.println("---------------------------------");
 				System.out.println();
