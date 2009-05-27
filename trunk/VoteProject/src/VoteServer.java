@@ -295,7 +295,7 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 		//this function gets called when we stop the heartbeat
 		//then, it will call viewAccepted with the new view (excluding the suspect)
 		
-		System.out.println("************ " + this.getAddress().toString() + "  SUSPECT " + address.toString());
+		System.out.println(this.getAddress().toString() + " has been alerted that " + address.toString() + " is suspect!");
 		this.isAlive = false;
 	}
 
