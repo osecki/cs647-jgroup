@@ -12,6 +12,8 @@ public class VoteClient
 	// Value:  Arraylist of VoteServers in that cluster
 	public static Hashtable<String, ArrayList<VoteServer>> servers;
 	
+	private static VoteServer failedServer = null;
+	
 	@SuppressWarnings("unchecked")
 	private static VoteServer getRandomServer()
 	{
@@ -75,8 +77,9 @@ public class VoteClient
 				System.out.println("(2) Get Results For A Particular Candidate");
 				System.out.println("(3) Get All Candidate Results For A State");
 				System.out.println("(4) Get National Tally For All Candidates");
-				System.out.println("(5) Kill A Random Server");				
-				System.out.println("(6) Exit");
+				System.out.println("(5) Kill A Random Server");
+				System.out.println("(6) Restart Failed Server");
+				System.out.println("(7) Exit");
 				System.out.println("---------------------------------");
 				System.out.println();
 				System.out.print("Select An Option: ");
@@ -162,9 +165,15 @@ public class VoteClient
 				else if (userInput.equals("5"))
 				{
 					// Randomly choose a server state group to crash
-					getRandomServer().stop();
+					failedServer = getRandomServer();
+					failedServer.stop();
 				}
-			} while(!userInput.equals("6"));
+				else if (userInput.equals("6"))
+				{
+					if (failedServer != null)
+						failedServer.isAlive = true;
+				}
+			} while(!userInput.equals("7"));
 		} 
 		catch (Exception e) 
 		{
