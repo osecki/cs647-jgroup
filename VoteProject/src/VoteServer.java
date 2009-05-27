@@ -1,5 +1,7 @@
 import org.jgroups.Address;
+import org.jgroups.Channel;
 import org.jgroups.ChannelClosedException;
+import org.jgroups.ChannelListener;
 import org.jgroups.ChannelNotConnectedException;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -11,19 +13,14 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Vector;
-//import java.io.Serializable;
 
-public class VoteServer extends ReceiverAdapter
+
+public class VoteServer extends ReceiverAdapter implements ChannelListener
 {
 	// Variables used in this class
 	private String state;
 	private JChannel channel;
-
-	// Health check thread
-	private HealthCheck healthThread;
-	public boolean isAlive;
-	private Vector<Address> healthVector;
-	
+	private boolean isAlive;
 	
 	// Global state ;  Key=state;  Value = <Key = candidate; Value = count>
 	public Hashtable<String, Hashtable<String, Integer>> globalTally;
@@ -36,10 +33,6 @@ public class VoteServer extends ReceiverAdapter
 	{
 		try
 		{
-			healthVector = new Vector<Address>();
-			healthThread = new HealthCheck();
-			healthThread.setServer(this);
-			
 			globalTally = new Hashtable<String, Hashtable<String, Integer>>();
 			state = st;				
 			
@@ -53,63 +46,43 @@ public class VoteServer extends ReceiverAdapter
 		}
 	}
 	
+	public String getStateName()
+	{
+		return state;
+	}
+	
 	public Address getAddress()
 	{
 		return channel.getLocalAddress();
 	}
-
-	public void sendStateToCluster()
+	
+	public void stopHealthCheck()
 	{
-		try
-		{
-			Message message = new Message(null, null, globalTally);
-			channel.send(message);	
-		}
-		catch(Exception ex)
-		{
-		}
+		channel.shutdown();
 	}
 	
+	public void startHealthCheck()
+	{
+
+	}
+
 	public void start() throws Exception
 	{
 		try
 		{
 			channel = new JChannel();
 			channel.setReceiver(this);
+			channel.addChannelListener(this);
 			channel.connect("vote"); 				// Join the channel for the state we want
 			channel.getState(null, 10000);
 		
 			// Start the health check
 			isAlive = true;
-			healthThread.start();			
 		}
 		catch(Exception ex)
 		{
 		}
 	}	
-
-	public void stop()
-	{
-		try
-		{
-			isAlive = false;
-			System.out.println("State Server: " + state + ":  " + channel.getLocalAddressAsString() + " has stopped");					
-		}
-		catch(Exception ex)
-		{
-		}
-	}
-	
-	public void disconn()
-	{
-		try
-		{
-			channel.disconnect();	
-		}
-		catch(Exception ex)
-		{
-		}
-	}
 
 	public void vote(String state, String cand)
 	{
@@ -138,6 +111,10 @@ public class VoteServer extends ReceiverAdapter
 				// Add an entry for the candidate
 				globalTally.get(state).put(cand, 1);
 			}			
+			
+			//Send state to all members in the group
+			Message message = new Message(null, null, globalTally);
+			channel.send(message);
 		}
 		catch(Exception ex)
 		{
@@ -170,8 +147,17 @@ public class VoteServer extends ReceiverAdapter
 	
 		try
 		{
-			if (globalTally.containsKey(state) && globalTally.get(state).containsKey(cand))
-				ret = globalTally.get(state).get(cand);			
+			Iterator<String> iter = globalTally.keySet().iterator();
+			
+			while(iter.hasNext())
+			{
+				String st = iter.next();
+				
+				Hashtable<String, Integer> stateResults = globalTally.get(st);
+				
+				if (stateResults.containsKey(cand))
+					ret = ret + stateResults.get(cand);
+			}	
 		}
 		catch(Exception ex)
 		{
@@ -231,7 +217,7 @@ public class VoteServer extends ReceiverAdapter
 
 				synchronized(globalTally)
 				{
-					globalTally = rcvdGlobalTally;
+					globalTally = (Hashtable<String, Hashtable<String, Integer>>) rcvdGlobalTally.clone();
 				}
 			}	
 			else if (msg.getObject() instanceof String)
@@ -239,27 +225,6 @@ public class VoteServer extends ReceiverAdapter
 				// Our health check has been received.
 				rcvdMsg = (String)msg.getObject();
 				Address sourceAddress = msg.getSrc();
-				
-				if (rcvdMsg.equals("ping"))
-				{
-					if (!sourceAddress.equals(channel.getLocalAddress()))
-					{
-						//if i am alive, send response back to sender
-						if (this.isAlive)
-						{
-
-							Message message = new Message(sourceAddress, null, "pong");
-							channel.send(message);
-						}
-					}
-				}				
-				else if (rcvdMsg.equals("pong"))
-				{						
-					//look through vector and remove address we have received ping from
-					for (int i = healthVector.size() - 1; i >= 0; i--)
-						if (healthVector.get(i).equals(sourceAddress))
-							healthVector.removeElementAt(i);
-				}
 			}			
 		}
 		catch(Exception ex)
@@ -270,12 +235,14 @@ public class VoteServer extends ReceiverAdapter
 	// This is called whenever someone joins or leaves the group	
 	public void viewAccepted(View new_view)
 	{		
+		//System.out.println("view accept: " + new_view.printDetails());
+		
 		// Save the group membership view
 		groupMembership = new_view;
 	}
 
 	public byte[] getState()				
-	{
+	{		
 		synchronized(globalTally) 
 		{
 			try 
@@ -292,7 +259,7 @@ public class VoteServer extends ReceiverAdapter
 
 	@SuppressWarnings("unchecked")
 	public void setState(byte[] new_state) 
-	{
+	{		
 		try 
 		{        	
 			Hashtable<String, Hashtable<String, Integer>> tempGlobalTally = (Hashtable<String, Hashtable<String, Integer>>)(Util.objectFromByteBuffer(new_state));
@@ -306,72 +273,34 @@ public class VoteServer extends ReceiverAdapter
 		{
 		}	
 	}
-	
-	public void ping()
-	{		
-		try
-		{
-			//if i am the oldest guy in the group, send out the pings to all members
-			if (channel.getLocalAddress().equals(groupMembership.getCreator()))
-			{				
-				healthVector.clear();
-				
-				//Set health vector to our group members (except me)
-				for (int i = 0; i < groupMembership.getMembers().size(); i++)
-					if (!groupMembership.getMembers().elementAt(i).equals(channel.getLocalAddress()))
-						healthVector.add(groupMembership.getMembers().elementAt(i));
-				
-				// Send a health check to all members in our group
-				Message message = new Message(null, null, "ping");
-				channel.send(message);	
-			}
-		}
-		catch(Exception ex)
-		{		
-		}
+
+	public void channelClosed(Channel arg0) 
+	{
+	}
+
+	public void channelConnected(Channel arg0) 
+	{
+	}
+
+	public void channelDisconnected(Channel arg0) 
+	{	
+	}
+
+	public void channelReconnected(Address arg0) 
+	{	
 	}
 	
-	public void checkPongResponses()
+	public void suspect(Address address)
 	{
-		try
-		{
-			//if i am the oldest guy in the group (who sent out the pings)
-			if (channel.getLocalAddress().equals(groupMembership.getCreator()))
-			{				
-				//we have not received a response from some cluster server
-				if (!healthVector.isEmpty())
-				{
-					System.out.println("Server: " + healthVector.toString() + " has not responded to heartbeat - failed!");
-					removeFailedServer(healthVector.elementAt(0));
-				}
-			}			
-		}
-		catch(Exception ex)
-		{
-		}
+		//this function gets called when we stop the heartbeat
+		//then, it will call viewAccepted with the new view (excluding the suspect)
+		
+		System.out.println("************ " + this.getAddress().toString() + "  SUSPECT " + address.toString());
+		this.isAlive = false;
 	}
-	
-	private void removeFailedServer(Address failedAddress)
+
+	public void channelShunned() 
 	{
-		//find the failed server by IP address from our servers list
-		
-		Iterator<String> iter = VoteClient.servers.keySet().iterator();
-		
-		while(iter.hasNext())
-		{
-			String state = iter.next();
-			
-			ArrayList<VoteServer> stateServers = VoteClient.servers.get(state);
-			
-			for (int i = 0 ; i < stateServers.size(); i++)
-			{
-				if (stateServers.get(i).getAddress().equals(failedAddress))
-				{
-					//this causes all sorts of problems with the client code
-					//stateServers.get(i).disconn();
-					return;
-				}
-			}
-		}
+		System.out.println("************** CHANNEL SHUNNED!");
 	}
 }
