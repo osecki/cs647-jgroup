@@ -58,7 +58,7 @@ public class VoteServer extends ReceiverAdapter
 
 		channel = new JChannel();
 		channel.setReceiver(this);
-		channel.connect(state); // Join the channel for the state we want
+		channel.connect("vote"); 				// Join the channel for the state we want
 		channel.getState(null, 10000);
 	
 		// Start the health check
