@@ -32,19 +32,25 @@ public class VoteServer extends ReceiverAdapter
 	private View groupMembership;
 	
 	// Constructor
-	public VoteServer(String st) throws Exception
+	public VoteServer(String st)
 	{
-		healthVector = new Vector<Address>();
-		healthThread = new HealthCheck();
-		healthThread.setServer(this);
-		
-		globalTally = new Hashtable<String, Hashtable<String, Integer>>();
-		state = st;				
-		
-		// Add an entry in the global tally for our state
-		globalTally.put(state, new Hashtable<String, Integer>());
-		
-		start();
+		try
+		{
+			healthVector = new Vector<Address>();
+			healthThread = new HealthCheck();
+			healthThread.setServer(this);
+			
+			globalTally = new Hashtable<String, Hashtable<String, Integer>>();
+			state = st;				
+			
+			// Add an entry in the global tally for our state
+			globalTally.put(state, new Hashtable<String, Integer>());
+			
+			start();			
+		}
+		catch(Exception ex)
+		{		
+		}
 	}
 	
 	public Address getAddress()
@@ -52,84 +58,124 @@ public class VoteServer extends ReceiverAdapter
 		return channel.getLocalAddress();
 	}
 
-	public void sendStateToCluster() throws ChannelNotConnectedException, ChannelClosedException
+	public void sendStateToCluster()
 	{
-		Message message = new Message(null, null, globalTally);
-		channel.send(message);
+		try
+		{
+			Message message = new Message(null, null, globalTally);
+			channel.send(message);	
+		}
+		catch(Exception ex)
+		{
+		}
 	}
 	
 	public void start() throws Exception
 	{
-		System.out.println("\nStarting New Channel - Joining Cluster");
-
-		channel = new JChannel();
-		channel.setReceiver(this);
-		channel.connect("vote"); 				// Join the channel for the state we want
-		channel.getState(null, 10000);
-	
-		// Start the health check
-		isAlive = true;
-		healthThread.start();
+		try
+		{
+			channel = new JChannel();
+			channel.setReceiver(this);
+			channel.connect("vote"); 				// Join the channel for the state we want
+			channel.getState(null, 10000);
+		
+			// Start the health check
+			isAlive = true;
+			healthThread.start();			
+		}
+		catch(Exception ex)
+		{
+		}
 	}	
 
 	public void stop()
 	{
-		isAlive = false;
-		System.out.println("State Server: " + state + ":  " + channel.getLocalAddressAsString() + " has stopped");		
+		try
+		{
+			isAlive = false;
+			System.out.println("State Server: " + state + ":  " + channel.getLocalAddressAsString() + " has stopped");					
+		}
+		catch(Exception ex)
+		{
+		}
 	}
 	
 	public void disconn()
 	{
-		channel.disconnect();
+		try
+		{
+			channel.disconnect();	
+		}
+		catch(Exception ex)
+		{
+		}
 	}
 
-	public void vote(String state, String cand) throws Exception
+	public void vote(String state, String cand)
 	{
-		if (globalTally.containsKey(state))					// If the state exists
+		try
 		{
-			if (globalTally.get(state).containsKey(cand))  	// If the candidate exists
+			if (globalTally.containsKey(state))					// If the state exists
 			{
-				// Increment the vote count
-				int candidateVoteCount = globalTally.get(state).get(cand);
-				candidateVoteCount = candidateVoteCount + 1;
-				globalTally.get(state).put(cand, candidateVoteCount); 
+				if (globalTally.get(state).containsKey(cand))  	// If the candidate exists
+				{
+					// Increment the vote count
+					int candidateVoteCount = globalTally.get(state).get(cand);
+					candidateVoteCount = candidateVoteCount + 1;
+					globalTally.get(state).put(cand, candidateVoteCount); 
+				}
+				else											// Candidate does not exist
+				{
+					// Set an initial vote count
+					globalTally.get(state).put(cand, 1);
+				}
 			}
-			else											// Candidate does not exist
+			else												// State does not exist
 			{
-				// Set an initial vote count
+				// Create entry for the state
+				globalTally.put(state, new Hashtable<String, Integer>());
+				
+				// Add an entry for the candidate
 				globalTally.get(state).put(cand, 1);
-			}
+			}			
 		}
-		else												// State does not exist
+		catch(Exception ex)
 		{
-			// Create entry for the state
-			globalTally.put(state, new Hashtable<String, Integer>());
-			
-			// Add an entry for the candidate
-			globalTally.get(state).put(cand, 1);
 		}
 	}
 
-	public String getCandidatesByState() throws Exception
+	public String getCandidatesByState()
 	{
 		String ret = "{}";
-		
-		if (globalTally.containsKey(state))
-			ret = globalTally.get(state).toString();
-		
-		// If we have no votes, return user friendly message
-		if (ret.equals("{}"))
-			ret = "No votes for this state yet.";
+	
+		try
+		{
+			if (globalTally.containsKey(state))
+				ret = globalTally.get(state).toString();
+			
+			// If we have no votes, return user friendly message
+			if (ret.equals("{}"))
+				ret = "No votes for this state yet.";			
+		}
+		catch(Exception ex)
+		{
+		}
 		
 		return ret;
 	}
 
-	public int getResultsByCandidate(String cand) throws Exception
+	public int getResultsByCandidate(String cand)
 	{	
 		int ret = 0;
-		
-		if (globalTally.containsKey(state) && globalTally.get(state).containsKey(cand))
-			ret = globalTally.get(state).get(cand);		
+	
+		try
+		{
+			if (globalTally.containsKey(state) && globalTally.get(state).containsKey(cand))
+				ret = globalTally.get(state).get(cand);			
+		}
+		catch(Exception ex)
+		{
+		}
 		
 		return ret;
 	}
@@ -208,34 +254,22 @@ public class VoteServer extends ReceiverAdapter
 					}
 				}				
 				else if (rcvdMsg.equals("pong"))
-				{	
+				{						
 					//look through vector and remove address we have received ping from
 					for (int i = healthVector.size() - 1; i >= 0; i--)
 						if (healthVector.get(i).equals(sourceAddress))
 							healthVector.removeElementAt(i);
-					
-					//check if healthVector is empty
-					if (healthVector.isEmpty())
-					{
-						
-					}
 				}
 			}			
 		}
 		catch(Exception ex)
 		{
-			System.out.println(ex.getMessage());
 		}
-
-
 	}	
 
 	// This is called whenever someone joins or leaves the group	
 	public void viewAccepted(View new_view)
-	{
-		System.out.println("*****************************");
-		
-		
+	{		
 		// Save the group membership view
 		groupMembership = new_view;
 	}
@@ -270,7 +304,6 @@ public class VoteServer extends ReceiverAdapter
 		}
 		catch(Exception e) 
 		{
-			e.printStackTrace();
 		}	
 	}
 	
@@ -280,7 +313,7 @@ public class VoteServer extends ReceiverAdapter
 		{
 			//if i am the oldest guy in the group, send out the pings to all members
 			if (channel.getLocalAddress().equals(groupMembership.getCreator()))
-			{			
+			{				
 				healthVector.clear();
 				
 				//Set health vector to our group members (except me)
@@ -304,7 +337,7 @@ public class VoteServer extends ReceiverAdapter
 		{
 			//if i am the oldest guy in the group (who sent out the pings)
 			if (channel.getLocalAddress().equals(groupMembership.getCreator()))
-			{
+			{				
 				//we have not received a response from some cluster server
 				if (!healthVector.isEmpty())
 				{
@@ -334,7 +367,8 @@ public class VoteServer extends ReceiverAdapter
 			{
 				if (stateServers.get(i).getAddress().equals(failedAddress))
 				{
-					stateServers.get(i).disconn();
+					//this causes all sorts of problems with the client code
+					//stateServers.get(i).disconn();
 					return;
 				}
 			}

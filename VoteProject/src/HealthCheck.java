@@ -18,9 +18,9 @@ public class HealthCheck extends Thread
 		{
 			try 
 			{
-				Thread.sleep(5000);			//sleep
+				Thread.sleep(5000);			//sleep before we ping
 				server.ping();				//send ping
-				Thread.sleep(5000);			//sleep
+				Thread.sleep(5000);		//sleep to wait for responses
 				server.checkPongResponses();
 			} 
 			catch (Exception e) 
