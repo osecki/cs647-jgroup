@@ -18,8 +18,10 @@ public class HealthCheck extends Thread
 		{
 			try 
 			{
-				Thread.sleep(1000);
-				server.ping();
+				Thread.sleep(5000);			//sleep
+				server.ping();				//send ping
+				Thread.sleep(5000);			//sleep
+				server.checkPongResponses();
 			} 
 			catch (InterruptedException e) 
 			{
