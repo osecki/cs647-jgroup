@@ -1,6 +1,7 @@
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.ChannelClosedException;
+import org.jgroups.ChannelException;
 import org.jgroups.ChannelListener;
 import org.jgroups.ChannelNotConnectedException;
 import org.jgroups.JChannel;
@@ -20,7 +21,7 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	// Variables used in this class
 	private String state;
 	private JChannel channel;
-	private boolean isAlive;
+	private boolean active;
 	
 	// Global state ;  Key=state;  Value = <Key = candidate; Value = count>
 	public Hashtable<String, Hashtable<String, Integer>> globalTally;
@@ -45,6 +46,11 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 		{		
 		}
 	}
+
+	public boolean isActive()
+	{
+		return active;
+	}
 	
 	public String getStateName()
 	{
@@ -60,24 +66,21 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	{
 		channel.shutdown();
 	}
-	
-	public void startHealthCheck()
-	{
-
-	}
 
 	public void start() throws Exception
 	{
 		try
 		{
 			channel = new JChannel();
+			channel.setOpt(JChannel.AUTO_RECONNECT, true);
+			channel.setOpt(JChannel.AUTO_GETSTATE, true);
 			channel.setReceiver(this);
 			channel.addChannelListener(this);
 			channel.connect("vote"); 				// Join the channel for the state we want
-			channel.getState(null, 10000);
-		
+			channel.getState(null, 10000);			
+			
 			// Start the health check
-			isAlive = true;
+			active = true;
 		}
 		catch(Exception ex)
 		{
@@ -206,6 +209,10 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	@SuppressWarnings("unchecked")
 	public void receive(Message msg) 
 	{
+		//debug
+		System.out.println("*** RCVD " + this.getAddress() + " " + msg.getObject().getClass());
+		
+		
 		String rcvdMsg = "";
 		
 		try
@@ -294,13 +301,27 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	{
 		//this function gets called when we stop the heartbeat
 		//then, it will call viewAccepted with the new view (excluding the suspect)
+		//this suspect server will no longer receive any messages sent to the group
 		
 		System.out.println(this.getAddress().toString() + " has been alerted that " + address.toString() + " is suspect!");
-		this.isAlive = false;
+		this.active = false;
 	}
 
 	public void channelShunned() 
 	{
 		System.out.println("************** CHANNEL SHUNNED!");
+	}
+	
+	public void readmit()
+	{
+		try 
+		{
+			channel.open();
+			channel.connect("vote");
+			channel.getState(null, 10000);			
+		} 
+		catch (ChannelException e) 
+		{
+		}
 	}
 }
