@@ -169,7 +169,7 @@ public class VoteClient
 				}
 				else if (userInput.equals("6"))
 				{
-					
+					failedServer.readmit();
 				}
 			} while(!userInput.equals("7"));	
 		}
