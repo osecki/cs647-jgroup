@@ -9,13 +9,13 @@
 
 
   <target name="run" depends='compile'>
-    <java classpathref="lib.path" classpath="./" classname='VoteClient' fork="true"/>
+    <java classpathref="lib.path" classpath="./bin" classname='VoteClient' fork="true"/>
   </target>
 
    <target name="compile" depends='vote'/>
 
   <target name="vote">
-    <javac classpathref="lib.path" srcdir='./' includes="*.java" />
+    <javac classpathref="lib.path" srcdir='./src' includes="*.java" />
   </target>
 
   <target name="clean">
