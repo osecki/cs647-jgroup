@@ -8,6 +8,11 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.jgroups.jmx.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.FD;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 import java.util.ArrayList;
@@ -62,9 +67,21 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 		return channel.getLocalAddress();
 	}
 	
-	public void stopHealthCheck()
+	public void stopHealthCheck() throws Exception
 	{
-		channel.shutdown();
+		//old code here...... doesn't quite work
+//		channel.shutdown();
+		
+		//BS TEST
+		DISCARD discard = (DISCARD) channel.getProtocolStack().findProtocol("DISCARD");
+		
+		if (discard != null)
+		{
+			discard.setDownDiscardRate(1);
+			discard.setUpDiscardRate(1);
+			System.out.println("Set discard rate");
+		}
+		//BS TEST
 	}
 
 	public void start() throws Exception
@@ -76,6 +93,16 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 			channel.setOpt(JChannel.AUTO_GETSTATE, true);
 			channel.setReceiver(this);
 			channel.addChannelListener(this);
+
+		
+			//BS TEST
+			//Add protocol for DISCARD			
+			DISCARD discard = new DISCARD();
+			discard.setExcludeItself(false);
+			discard.setLocalAddress(channel.getLocalAddress());
+			ProtocolStack stack = channel.getProtocolStack();
+			stack.insertProtocol(discard, ProtocolStack.ABOVE, stack.getTransport().getName());			
+			
 			channel.connect("vote"); 				// Join the channel for the state we want
 			channel.getState(null, 10000);			
 			
