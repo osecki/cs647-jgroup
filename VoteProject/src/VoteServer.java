@@ -28,8 +28,10 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	private JChannel channel;
 	private boolean active;
 	
+	ServerState serverState = null;
+	
 	// Global state ;  Key=state;  Value = <Key = candidate; Value = count>
-	public Hashtable<String, Hashtable<String, Integer>> globalTally;
+	
 	
 	// Group membership object
 	private View groupMembership;
@@ -39,11 +41,12 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	{
 		try
 		{
-			globalTally = new Hashtable<String, Hashtable<String, Integer>>();
+			serverState = new ServerState();
+			
 			state = st;				
 			
 			// Add an entry in the global tally for our state
-			globalTally.put(state, new Hashtable<String, Integer>());
+			serverState.globalTally.put(state, new Hashtable<String, Integer>());
 			
 			start();			
 		}
@@ -97,12 +100,13 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 		
 			//BS TEST
 			//Add protocol for DISCARD			
+/*			
 			DISCARD discard = new DISCARD();
 			discard.setExcludeItself(false);
 			discard.setLocalAddress(channel.getLocalAddress());
 			ProtocolStack stack = channel.getProtocolStack();
 			stack.insertProtocol(discard, ProtocolStack.ABOVE, stack.getTransport().getName());			
-			
+*/			
 			channel.connect("vote"); 				// Join the channel for the state we want
 			channel.getState(null, 10000);			
 			
@@ -114,36 +118,47 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 		}
 	}	
 
-	public void vote(String state, String cand)
+	public void vote(int voterID, String state, String cand)
 	{
 		try
 		{
-			if (globalTally.containsKey(state))					// If the state exists
+			//Check for unique voter ID, and if so, continue, else quit
+			if (serverState.voteIDs.contains(voterID))
 			{
-				if (globalTally.get(state).containsKey(cand))  	// If the candidate exists
+				System.out.println("**** VoterID: " + voterID + " has already voted!");
+				return;
+			}
+			
+			//Add voter ID to table
+			serverState.voteIDs.addElement(voterID);
+			
+			
+			if (serverState.globalTally.containsKey(state))					// If the state exists
+			{
+				if (serverState.globalTally.get(state).containsKey(cand))  	// If the candidate exists
 				{
 					// Increment the vote count
-					int candidateVoteCount = globalTally.get(state).get(cand);
+					int candidateVoteCount = serverState.globalTally.get(state).get(cand);
 					candidateVoteCount = candidateVoteCount + 1;
-					globalTally.get(state).put(cand, candidateVoteCount); 
+					serverState.globalTally.get(state).put(cand, candidateVoteCount); 
 				}
 				else											// Candidate does not exist
 				{
 					// Set an initial vote count
-					globalTally.get(state).put(cand, 1);
+					serverState.globalTally.get(state).put(cand, 1);
 				}
 			}
 			else												// State does not exist
 			{
 				// Create entry for the state
-				globalTally.put(state, new Hashtable<String, Integer>());
+				serverState.globalTally.put(state, new Hashtable<String, Integer>());
 				
 				// Add an entry for the candidate
-				globalTally.get(state).put(cand, 1);
+				serverState.globalTally.get(state).put(cand, 1);
 			}			
 			
 			//Send state to all members in the group
-			Message message = new Message(null, null, globalTally);
+			Message message = new Message(null, null, serverState);
 			channel.send(message);
 		}
 		catch(Exception ex)
@@ -157,8 +172,8 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	
 		try
 		{
-			if (globalTally.containsKey(state))
-				ret = globalTally.get(state).toString();
+			if (serverState.globalTally.containsKey(state))
+				ret = serverState.globalTally.get(state).toString();
 			
 			// If we have no votes, return user friendly message
 			if (ret.equals("{}"))
@@ -177,13 +192,13 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	
 		try
 		{
-			Iterator<String> iter = globalTally.keySet().iterator();
+			Iterator<String> iter = serverState.globalTally.keySet().iterator();
 			
 			while(iter.hasNext())
 			{
 				String st = iter.next();
 				
-				Hashtable<String, Integer> stateResults = globalTally.get(st);
+				Hashtable<String, Integer> stateResults = serverState.globalTally.get(st);
 				
 				if (stateResults.containsKey(cand))
 					ret = ret + stateResults.get(cand);
@@ -201,13 +216,13 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 		Hashtable<String, Integer> results = new Hashtable<String, Integer>();
 		
 		// Iterate through states
-		Iterator<String> iter = globalTally.keySet().iterator();
+		Iterator<String> iter = serverState.globalTally.keySet().iterator();
 		
 		while (iter.hasNext())
 		{
 			String state = iter.next();
 			
-			Hashtable<String, Integer> stateResults = globalTally.get(state);
+			Hashtable<String, Integer> stateResults = serverState.globalTally.get(state);
 			
 			// Iterate state results
 			Iterator<String> iterState = stateResults.keySet().iterator();
@@ -237,21 +252,22 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	public void receive(Message msg) 
 	{
 		//debug
-		System.out.println("*** RCVD " + this.getAddress() + " " + msg.getObject().getClass());
+		//System.out.println("*** RCVD " + this.getAddress() + " " + msg.getObject().getClass());
 		
 		
 		String rcvdMsg = "";
 		
 		try
 		{
-			if (msg.getObject() instanceof Hashtable)
+			if (msg.getObject() instanceof ServerState)
 			{
 				// Our state
-				Hashtable<String, Hashtable<String, Integer>> rcvdGlobalTally = (Hashtable<String, Hashtable<String,Integer>>)msg.getObject();
+				ServerState rcvdGlobalTally = (ServerState)msg.getObject();
 
-				synchronized(globalTally)
+				synchronized(serverState)
 				{
-					globalTally = (Hashtable<String, Hashtable<String, Integer>>) rcvdGlobalTally.clone();
+					//fix me
+					serverState = (ServerState) rcvdGlobalTally;
 				}
 			}	
 			else if (msg.getObject() instanceof String)
@@ -277,11 +293,11 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 
 	public byte[] getState()				
 	{		
-		synchronized(globalTally) 
+		synchronized(serverState) 
 		{
 			try 
 			{
-				return Util.objectToByteBuffer(globalTally);
+				return Util.objectToByteBuffer(serverState);
 			}
 			catch(Exception e) 
 			{
@@ -296,11 +312,11 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	{		
 		try 
 		{        	
-			Hashtable<String, Hashtable<String, Integer>> tempGlobalTally = (Hashtable<String, Hashtable<String, Integer>>)(Util.objectFromByteBuffer(new_state));
+			ServerState tempGlobalTally = (ServerState)(Util.objectFromByteBuffer(new_state));
 
-			synchronized(globalTally) 
+			synchronized(tempGlobalTally) 
 			{
-				globalTally = tempGlobalTally;
+				serverState = tempGlobalTally;
 			}
 		}
 		catch(Exception e) 

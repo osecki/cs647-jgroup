@@ -82,6 +82,7 @@ public class VoteClient
 		String userInput;
 		String stateInput;
 		String candidateInput;
+		int voterID;
 		
 		try
 		{
@@ -115,6 +116,8 @@ public class VoteClient
 				// Vote
 				if (userInput.equals("1"))
 				{
+					System.out.print("Enter Voter ID: ");
+					voterID = Integer.parseInt(br.readLine());
 					System.out.print("Select A State:  ");
 					stateInput = br.readLine();
 					System.out.print("Select A Candidate:  ");
@@ -124,12 +127,12 @@ public class VoteClient
 					if (stateServerExists(stateInput))
 					{
 						// Grab the oldest server in that state and vote
-						getOldestStateServer(stateInput).vote(stateInput, candidateInput);
+						getOldestStateServer(stateInput).vote(voterID, stateInput, candidateInput);
 					}
 					else
 					{
 						// Vote on a random server
-						getOldestStateServer().vote(stateInput, candidateInput);
+						getOldestStateServer().vote(voterID, stateInput, candidateInput);
 						
 						// Spawn a new server for the state that doesn't exist
 						servers.add(new VoteServer(stateInput));
