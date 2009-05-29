@@ -52,7 +52,10 @@ This does not impact application runtime.  Simply type in the console your crite
 Instructions:
 
 Upon running the application, the user will be presented with a menu style console
-application.  The user will be presented with the following options:
+application.  Our architecture dictates that the voting client can access
+servers directly.  All nodes are simulated on the same local PC, however, are 
+differentiated by different port numbers.  The following options are available upon
+running.
 
 (1)  Vote For Candidate
 
@@ -168,3 +171,28 @@ Requirements Analysis (which is refernced in the java files as Requirement x)
 	an AUTO_RECONNECT and AUTO_GETSTATE property.  Upon being shunned
 	the recovered server will initiate the rejoin protocol and 
 	return to the cluster and sync up his state.
+	
+	
+Experience
+
+	The JGroups API was found to be extremely useful in creating robust,
+	distributed and redundant applications.  The API provided a rich
+	framework which aided the software development by implementing
+	a seamless GMS interface, which allows complete customization
+	by a software developer.  It drastically reduced development time
+	since we did not need to write any of the implementation of the
+	protocols.  
+	
+	I think that the JGroups API would be extremely useful for 
+	applications demanding high availability and reliability.  After
+	using the API for this home assignment, we appreciate the benefits
+	of such systems.  
+	
+	I would have thought that JGroups would be more popular than it
+	seems to be.  Several technical roadbloacks, such as the heartbeat
+	requirements, were encountered during development.  The only
+	real technical leads found were directly from the JGroups
+	manual and tutorial.  There were not many stand alone
+	forums found, and the newsgroup was not too lively.  However,
+	upon trial and error, the API was found to be very detailed
+	and easy to use.
