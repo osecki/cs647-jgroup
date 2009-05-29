@@ -26,15 +26,8 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	// Variables used in this class
 	private String state;
 	private JChannel channel;
-	private boolean active;
-	
+	private boolean active;	
 	ServerState serverState = null;
-	
-	// Global state ;  Key=state;  Value = <Key = candidate; Value = count>
-	
-	
-	// Group membership object
-	private View groupMembership;
 	
 	// Constructor
 	public VoteServer(String st)
@@ -71,27 +64,22 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	}
 	
 	public void stopHealthCheck() throws Exception
-	{
-		//old code here...... doesn't quite work
-//		channel.shutdown();
-		
-		//BS TEST
+	{		
 		DISCARD discard = (DISCARD) channel.getProtocolStack().findProtocol("DISCARD");
 		
 		if (discard != null)
 		{
 			discard.setDownDiscardRate(1);
 			discard.setUpDiscardRate(1);
-			System.out.println("Set discard rate");
 		}
-		//BS TEST
 	}
 
 	public void start() throws Exception
 	{
 		try
 		{
-			channel = new JChannel();
+			channel = new JChannel("UDP(oob_thread_pool.max_threads=8;oob_thread_pool.keep_alive_time=5000;max_bundle_size=64000;mcast_send_buf_size=640000;oob_thread_pool.queue_max_size=100;mcast_recv_buf_size=25000000;use_concurrent_stack=true;tos=8;mcast_port=45588;loopback=false;thread_pool.min_threads=2;oob_thread_pool.rejection_policy=Run;thread_pool.max_threads=8;enable_diagnostics=true;thread_naming_pattern=cl;ucast_send_buf_size=640000;ucast_recv_buf_size=20000000;thread_pool.enabled=true;use_incoming_packet_handler=true;oob_thread_pool.enabled=true;ip_ttl=2;enable_bundling=true;thread_pool.rejection_policy=discard;discard_incompatible_packets=true;thread_pool.keep_alive_time=5000;thread_pool.queue_enabled=true;mcast_addr=228.10.10.10;max_bundle_timeout=30;oob_thread_pool.queue_enabled=false;oob_thread_pool.min_threads=1;thread_pool.queue_max_size=1000):PING(num_initial_members=3;timeout=2000):MERGE2(min_interval=10000;max_interval=30000):FD_SOCK:FD(max_tries=3;timeout=3000;shun=true):VERIFY_SUSPECT(timeout=1500):BARRIER:pbcast.NAKACK(use_stats_for_retransmission=false;gc_lag=0;use_mcast_xmit=true;retransmit_timeout=50,300,600,1200;exponential_backoff=150;discard_delivered_msgs=true):UNICAST(timeout=300,600,1200):pbcast.STABLE(desired_avg_gossip=50000;max_bytes=1000000;stability_delay=1000):VIEW_SYNC(avg_send_interval=60000):pbcast.GMS(print_local_addr=true;view_bundling=true;join_timeout=3000;shun=true):FC(max_credits=500000;min_threshold=0.20):FRAG2(frag_size=60000):pbcast.STATE_TRANSFER");
+						
 			channel.setOpt(JChannel.AUTO_RECONNECT, true);
 			channel.setOpt(JChannel.AUTO_GETSTATE, true);
 			channel.setReceiver(this);
@@ -100,13 +88,13 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 		
 			//BS TEST
 			//Add protocol for DISCARD			
-/*			
+			
 			DISCARD discard = new DISCARD();
 			discard.setExcludeItself(false);
 			discard.setLocalAddress(channel.getLocalAddress());
 			ProtocolStack stack = channel.getProtocolStack();
 			stack.insertProtocol(discard, ProtocolStack.ABOVE, stack.getTransport().getName());			
-*/			
+			
 			channel.connect("vote"); 				// Join the channel for the state we want
 			channel.getState(null, 10000);			
 			
@@ -285,10 +273,6 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 	// This is called whenever someone joins or leaves the group	
 	public void viewAccepted(View new_view)
 	{		
-		//System.out.println("view accept: " + new_view.printDetails());
-		
-		// Save the group membership view
-		groupMembership = new_view;
 	}
 
 	public byte[] getState()				
@@ -352,19 +336,17 @@ public class VoteServer extends ReceiverAdapter implements ChannelListener
 
 	public void channelShunned() 
 	{
-		System.out.println("************** CHANNEL SHUNNED!");
+		System.out.println(this.getAddress() + " has been shunned.  Initiating rejoin protocol.");
 	}
 	
 	public void readmit()
-	{
-		try 
+	{		
+		DISCARD discard = (DISCARD) channel.getProtocolStack().findProtocol("DISCARD");
+		
+		if (discard != null)
 		{
-			channel.open();
-			channel.connect("vote");
-			channel.getState(null, 10000);			
-		} 
-		catch (ChannelException e) 
-		{
+			discard.setDownDiscardRate(0);
+			discard.setUpDiscardRate(0);
 		}
 	}
 }
