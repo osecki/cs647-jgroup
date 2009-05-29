@@ -57,6 +57,7 @@ public class VoteClient
 	
 	public static VoteServer getOldestStateServer()
 	{
+		//Requirement 4
 		VoteServer voteServer = null;
 		
 		if (servers.size() > 0)
@@ -92,6 +93,7 @@ public class VoteClient
 			// Get a reader to get client input from console
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
+			//Requirement 1
 			// Start up 3 initial servers and add initial servers to list
 			servers.add(new VoteServer("NJ"));
 			servers.add(new VoteServer("PA"));
@@ -131,6 +133,7 @@ public class VoteClient
 					}
 					else
 					{
+						//Requirement 2						
 						// Vote on a random server
 						getOldestStateServer().vote(voterID, stateInput, candidateInput);
 						
