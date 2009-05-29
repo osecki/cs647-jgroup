@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+
+<project default='run' basedir='.'>
+
+	<path id="lib.path">
+	  <fileset dir="lib" includes="*.jar" />
+	  </path>
+
+
+  <target name="run" depends='compile'>
+    <java classpathref="lib.path" classpath="./" classname='VoteClient' fork="true"/>
+  </target>
+
+   <target name="compile" depends='vote'/>
+
+  <target name="vote">
+    <javac classpathref="lib.path" srcdir='./' includes="*.java" />
+  </target>
+
+  <target name="clean">
+    <delete>
+			<fileset dir="./">
+				<include name='*.class' />
+			</fileset>
+		</delete>
+  </target>
+</project>
+
