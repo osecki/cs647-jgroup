@@ -15,6 +15,7 @@ File Structure:
 			----------jgroups-all.jar
 			----------log4j.jar
 			-----src
+			----------log4j.properties (log4j configuration file)
 			----------VoteServer.java  (implementation of voting server)
 			----------VoteClient.java  (implementation of voting client)
 			----------ServerState.java (representation of server state)
@@ -29,6 +30,22 @@ To Compile:  (Navigate to VoteProject directory)
 To Run:      (Navigate to VoteProject directory)
 
 			java -cp .;lib\jgroups-all.jar;lib\log4j.jar;lib\commons-logging.jar;bin\ VoteClient
+
+
+
+
+Log4J is configured in a way to show the WARN level.  This shows various pieces of information
+about the JGroups configuration.  Modify the logging level appropriately in log4j.properties
+should you want to see other types of information (DEBUG, ERROR, INFO, etc).
+
+Note:   on our testing, the WARN level showed various messages such as:
+
+[WARN] UDP: - failed to join /224.0.75.75:7500 on net2: java.net.SocketException: Unrecognized Windows Sockets error: 0: no Inet4Address associated with interface
+
+We believe that this does not cause any impact on the application runtime.
+
+In addition, since logging is enabled, it is causing log output to be interwoven with the console input prompts.  
+This does not impact application runtime.  Simply type in the console your criteria and hit enter.
 
 
 
@@ -78,7 +95,27 @@ application.  The user will be presented with the following options:
 
 (5)  Kill A Random Server
 
+			To kill a random server, select this option, and the console will display (for example):
+			
+			Killing Server: 192.168.1.2:61087
+			
+			We implemented this using the DISCARD protocol.  Upon selection of this option,
+			we modify the protocol stack such that the channel DISCARDS all traffic.  Upon detection
+			that the heartbeat is dead, this channel will become suspect, and the following output will
+			be displayed (for example):
+			
+			192.168.1.2:61089 has been alerted that 192.168.1.2:61087 is suspect!
+
+			Typically, now, you should select option (6) to restart the failed server
+
 (6)  Restart Failed Server
+
+			This option will restart the failed server from option (5).  When the server group
+			detects that the failed server is alive, the server will be shunned and automatically
+			initiate the rejoin protocol.  Typical output from this option is shown below:
+			
+			23811 [WARN] FD: - I was suspected by 192.168.1.2:61091; ignoring the SUSPECT message and sending back a HEARTBEAT_ACK	
+			192.168.1.2:61091 has been shunned.  Initiating rejoin protocol
 
 (7)  Exit
 
