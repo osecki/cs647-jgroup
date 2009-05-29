@@ -119,3 +119,52 @@ application.  The user will be presented with the following options:
 
 (7)  Exit
 
+
+
+Requirements Analysis (which is refernced in the java files as Requirement x)
+
+1) Startup
+	
+	The application spawns three initial servers (NJ, PA, NY) implemented as JChannel objects
+	extending ReceiverAdapter and implementing ChannelListener classes from the JGroups API
+
+2) Dynamic Membership 1
+
+	
+	When a vote is cast, the application checks the cluster to determine if any do not represent
+	the desired state, the vote is accepted by the oldest server, and a new server is spawned
+	and joins the cluster, through the JGroups connect API call
+
+3) State Transfer
+
+	As a new server joins the cluster, the server calls the JGroups methods getState and
+	setState.  These implementations serialize the state session objects which are
+	broadcast to all members of the cluster through the JGroups framework
+
+4) Dynamic Membership 2
+
+	After a vote is collected, the server that was voted on will serialize the global state
+	and initiate a state transfer as described in (3)
+
+5) Dynamic Membership 3
+
+	The JChannel object allows customization of the protocol stack in the constructor
+	of the object.  We specify the PING and FD protocols which are implemented
+	in the JGroups stack and protocol framework.  The framework will initiate
+	heartbeats and responses.
+
+6) Simulation of Server Failure
+
+	Simulation of a failure is achieved by modifying the DIsCARD protocol such that
+	all packets are dropped.  The JGroups API detects the failure and marks
+	the server as SUSPECT and the server is expelled from the group.
+
+7) Dynamic Membership 4
+
+	After the server has become SUSPECT, we can bring it back to life by
+	modifying the DISCARD protocol to allow all traffic to be seen on the
+	failed node.  The JGroups framework will detect that the node is alive
+	and he will be shunned.  We configured the JChannel objects to have
+	an AUTO_RECONNECT and AUTO_GETSTATE property.  Upon being shunned
+	the recovered server will initiate the rejoin protocol and 
+	return to the cluster and sync up his state.
