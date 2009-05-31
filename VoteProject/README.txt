@@ -125,7 +125,7 @@ running.
 
 
 
-Requirements Analysis (which is refernced in the java files as Requirement x)
+Requirements Analysis (which is referrenced in the java files as Requirement x)
 
 1) Startup
 	
