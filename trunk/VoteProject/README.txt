@@ -45,7 +45,8 @@ Note:   on our testing, the WARN level showed various messages such as:
 We believe that this does not cause any impact on the application runtime.
 
 In addition, since logging is enabled, it is causing log output to be interwoven with the console input prompts.  
-This does not impact application runtime.  Simply type in the console your criteria and hit enter.
+This does not impact application runtime.  Simply type in the console your criteria and hit enter as though
+the logging output was never there.
 
 
 
@@ -195,4 +196,5 @@ Experience
 	manual and tutorial.  There were not many stand alone
 	forums found, and the newsgroup was not too lively.  However,
 	upon trial and error, the API was found to be very detailed
-	and easy to use.
+	and easy to use.  I would recommend it to anyone needing to perform
+	tasks such as this one.
